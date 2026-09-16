@@ -1,0 +1,67 @@
+# Jev API and Python SDK
+
+Observed: 2026-09-16. This record combines provider documentation, a non-paid OpenAPI fetch, and SDK source inspection.
+
+## HTTP contract
+
+The public [OpenAPI document](https://api.typesafe.ai/openapi.json) identifies API 0.2.0, with POST /v1/systemone and GET /v1/models. Authentication uses a Bearer token. The decision request requires state, model, and a nonempty named question mapping. State is a string, object, or array. Responses include answers, returned model identity, and token usage.
+
+Choice returns a selected option and distribution. Score returns a potentially fractional expected rubric level and its distribution. Noul returns a yes probability. Documentation promises normalized distributions and bounded probabilities; the OpenAPI numeric fields do not encode all those bounds.
+
+Sources: [HTTP reference](https://docs.typesafe.ai/api.md), [advanced values](https://docs.typesafe.ai/primitives/advanced.md), [OpenAPI](https://api.typesafe.ai/openapi.json).
+
+## Limits and identity
+
+The documentation describes a shared state-and-question budget around 32,000 tokens, not an exact contractual ceiling. Choice permits at most 255 options. The default alias is jev-latest. The model listing is account-dependent, and the returned model identity may differ from the requested alias. No immutable-version compatibility promise was established by this reading.
+
+Sources: [Primitives](https://docs.typesafe.ai/primitives.md), [Choice](https://docs.typesafe.ai/primitives/choice.md), [SDK constants](https://docs.typesafe.ai/sdk/python/api/constants.md).
+
+## SDK facilities
+
+Inspected typesafe-sdk 0.6.0, Python >=3.10, commit [420ef4ff](https://github.com/typesafe-ai/typesafe-sdk-python/commit/420ef4ffb612d5a539a1e0f0fe883ff6770340af).
+
+| Facility | Source observation |
+| --- | --- |
+| Sync and async clients | TypeSafeClient and AsyncTypeSafeClient expose typed questions, answers, model listing, request IDs, and raw responses |
+| HTTP injection | Accepts custom transport or an httpx2 client; SDK closure also closes an injected client |
+| Retries | Two retries by default for selected HTTP/network failures; honors retry headers and uses capped backoff with jitter |
+| Errors | Typed HTTP, connection, timeout, and response-validation errors; retains request metadata |
+| Future fields | Unknown fields are ignored; unknown answer types are skipped with a warning while raw data remains available |
+| Logging | Standard request logging; debug includes bodies that are not redacted, although secret headers are redacted |
+
+Sources at that commit: [public exports](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/__init__.py), [_core/client/aio/client.py](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/_core/client/aio/client.py), [_core/retry.py](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/_core/retry.py), [_core/errors.py](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/_core/errors.py), [_core/response_types.py](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/_core/response_types.py), [_core/logging.py](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/_core/logging.py).
+
+No live cancellation, retry, or malformed-payload behavior was exercised.
+
+## Python type correlation
+
+The SDK accepts Mapping[str, Question] and returns a non-generic SystemOneResponse. Its answers attribute is dict[str, Answer], where Answer is the union of NoulAnswer, ChoiceAnswer, and ScoreAnswer. The per-kind convenience mappings narrow that union but do not preserve named keys. ChoiceAnswer.choice is str, without a literal relationship to the input options.
+
+The public typing fixture asserts method return types and diverse valid inputs. It does not assert request-specific answer-key or option-literal inference. The signatures support the conclusion that the SDK does not retain those correlations; this was not independently tested with a type checker.
+
+No declarative result-schema facility was found in the inspected public exports or system_one signatures. This is a concrete interface gap to evaluate, not yet a selected Jevantic design.
+
+Sources at the same pinned commit: [question types](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/_core/question_types.py), [response types](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/_core/response_types.py), [typing fixture](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/tests/typing/valid.py), [public exports](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/__init__.py).
+
+## Source conflicts and unknowns
+
+- Rendered HTTP documentation requires instructions and at least two Score levels. OpenAPI and SDK permit omitted instructions and a one-level Score.
+- Numeric range and distribution promises are stronger than the constraints encoded in OpenAPI and SDK float decoding.
+- Generated wire usage includes billing_units, but the public SDK wrapper accommodates its absence from actual API responses.
+- Exact quotas, partial-batch behavior, idempotency, cancellation semantics, and the confidence formula remain unresolved.
+
+Sources: [HTTP docs](https://docs.typesafe.ai/api.md), [OpenAPI](https://api.typesafe.ai/openapi.json), [_core/questions.py](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/_core/questions.py), [_core/response_types.py](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/_core/response_types.py).
+
+## Other model backends
+
+TypeSafe maintains system-one-adapter 0.1.4, inspected at [0bb819b8](https://github.com/typesafe-ai/system-one-adapter-python/commit/0bb819b85d67a98c736d7c3004eae95f49f3daa3). It maps OpenAI, Anthropic, or custom provider outputs into TypeSafe-shaped decisions. It can request self-reported distributions and computes its own confidence measures.
+
+This demonstrates an existing alternate backend shape. It does not establish that LLM-derived probabilities have Jev's calibration or uncertainty semantics.
+
+Sources: [adapter README](https://github.com/typesafe-ai/system-one-adapter-python/blob/0bb819b85d67a98c736d7c3004eae95f49f3daa3/README.md), [provider protocol](https://github.com/typesafe-ai/system-one-adapter-python/blob/0bb819b85d67a98c736d7c3004eae95f49f3daa3/src/system_one_adapter/providers/base.py).
+
+## Executed non-paid check
+
+Command: curl --fail --location --silent --show-error https://api.typesafe.ai/openapi.json | jq '{openapi, api_version: .info.version, title: .info.title, endpoints: (.paths | keys)}'
+
+Result: OpenAPI 3.1.0; API version 0.2.0; title TypeSafe; endpoints /v1/models and /v1/systemone.
