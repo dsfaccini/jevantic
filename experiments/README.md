@@ -1,8 +1,10 @@
 # Design experiments
 
-These small offline experiments test whether candidate interfaces can preserve useful Python types. They are not the Jevantic package, SDK adapters, or production-ready implementations.
+The initial offline experiments test whether candidate interfaces preserve useful Python types. The later [standalone alpha](../README.md) packages the typed-question approach with real SDK execution and validation. The public interface continues to develop.
 
 The separate SDK behavior probe checks the dependency through its public interface with deterministic local HTTP responses.
+
+The [core verification record](../docs/verification.md) covers offline behavioral tests, static checks, Python compatibility, package installation, and opt-in live evidence. These broader checks are separate from the small typing probes below.
 
 | Probe | Question | Observed result |
 | --- | --- | --- |

@@ -1,6 +1,6 @@
 # Jev API and Python SDK
 
-Observed: 2026-09-16. This record combines provider documentation, a non-paid OpenAPI fetch, SDK source inspection, and offline execution through injected HTTP transports.
+Observed: 2026-09-16; live follow-up: 2026-09-17 UTC. This record combines provider documentation, OpenAPI, SDK source inspection, offline execution, and live requests with synthetic content.
 
 ## HTTP contract
 
@@ -31,7 +31,7 @@ Inspected typesafe-sdk 0.6.0, Python >=3.10, commit [420ef4ff](https://github.co
 
 Sources at that commit: [public exports](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/__init__.py), [_core/client/aio/client.py](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/_core/client/aio/client.py), [_core/retry.py](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/_core/retry.py), [_core/errors.py](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/_core/errors.py), [_core/response_types.py](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/_core/response_types.py), [_core/logging.py](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/_core/logging.py).
 
-The offline checks below exercise cancellation, retries, lifecycle, and malformed payloads. No live provider request was made.
+The offline checks below exercise cancellation, retries, lifecycle, and malformed payloads. The later live checks establish selected service behavior separately.
 
 ## Executed SDK behavior
 
@@ -48,7 +48,7 @@ The [reproducible probe](../../experiments/sdk_behavior.py) calls the public asy
 | Unknown answer kind | The public answer mapping omits it; the raw HTTP response retains it | Public decoded answers alone do not expose every returned answer |
 | Semantically invalid result | SDK accepts Noul 1.5; Choice confidence -0.25; an unconfigured selected label and probability key; probability 1.2; and a missing requested answer | Jevantic needs validation against the actual question, beyond SDK scalar decoding |
 
-These are client observations from synthetic responses, not evidence that the live provider emits those responses. The cancellation check covers a pending injected transport handler, not remote server cancellation. Retry timing, real network resource cleanup, and live service behavior remain unverified.
+These are client observations from synthetic responses, not evidence that the live provider emits those responses. The cancellation check covers a pending injected transport handler, not remote server cancellation. Retry timing and adverse real-network cleanup remain unverified.
 
 Command:
 
@@ -68,12 +68,29 @@ Sources at the same pinned commit: [question types](https://github.com/typesafe-
 
 ## Source conflicts and unknowns
 
-- Rendered HTTP documentation requires instructions and at least two Score levels. OpenAPI and SDK permit omitted instructions and a one-level Score.
+- Rendered HTTP documentation requires instructions and at least two Score levels. OpenAPI and SDK permit omitted instructions and a one-level Score; the live endpoint accepted both in the checks below. The endpoint enforces the documented ten-level maximum.
 - Numeric range and distribution promises are stronger than the constraints encoded in OpenAPI and SDK float decoding. The offline probe confirms that several invalid numerical values and question/answer mismatches pass SDK decoding.
 - Generated wire usage includes billing_units, but the public SDK wrapper accommodates its absence from actual API responses.
 - Exact quotas, partial-batch behavior, idempotency, cancellation semantics, and the confidence formula remain unresolved.
 
 Sources: [HTTP docs](https://docs.typesafe.ai/api.md), [OpenAPI](https://api.typesafe.ai/openapi.json), [_core/questions.py](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/_core/questions.py), [_core/response_types.py](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/_core/response_types.py).
+
+## Executed live contract checks
+
+The [opt-in script](../../checks/live_contract.py) sent synthetic support-ticket content using typesafe-sdk 0.6.0 with retries disabled. Successful responses identified the model as `jev-1.13.0`. Credentials are loaded in-process from an explicitly selected environment file and are absent from the observations.
+
+| Case | Observed result |
+| --- | --- |
+| Noul, Choice, and Score in one request | HTTP 200; named typed answers and token usage; question-aware validation passed |
+| Array and object Score descriptions with structured instructions | HTTP 200; returned legend matched the wire JSON descriptions |
+| Omitted instructions with Noul criteria | HTTP 200 |
+| One-level Score | HTTP 200; score 0, probability 1 on level 0 |
+| Eleven-level Score | HTTP 400; provider error explicitly requires at most 10 levels |
+| Less decisive Choice and two multi-level Scores | HTTP 200; distributions summed to 1 and weighted scores matched, without normalizing responses |
+
+Evidence: [initial responses](../observations/live-contract.json), [exact upper-bound error](../observations/live-boundary.json), [numerical follow-up](../observations/live-precision.json). Records retain timestamps, model names, request IDs, and synthetic response bodies. They cover these requests only.
+
+The prototype also checks that a Choice selects a maximal-probability option and that Score agrees with its weighted distribution, following the provider's [Choice](https://docs.typesafe.ai/primitives/choice) and [Score](https://docs.typesafe.ai/primitives/score) definitions. Its `1e-6` probability tolerance and scaled Score tolerance passed these live observations; the samples do not prove a universal rounding bound.
 
 ## Other model backends
 

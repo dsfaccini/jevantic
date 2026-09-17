@@ -1,0 +1,16 @@
+{
+  "observed_at": "2026-09-17T02:08:54.015691+00:00",
+  "sdk_version": "0.6.0",
+  "input": {
+    "ticket": "I was charged twice for my subscription. Please refund the duplicate payment."
+  },
+  "observations": [
+    {
+      "case": "eleven_level_score",
+      "status": 400,
+      "error_type": "TypeSafeBadRequestError",
+      "request_id": "req_01a0ad1fbf2277fa9e4b3beaeaffcb52",
+      "detail": "POST https://api.typesafe.ai/v1/systemone: 400 Too many score levels. Must have at most 10 levels. (request_id=req_01a0ad1fbf2277fa9e4b3beaeaffcb52)"
+    }
+  ]
+}

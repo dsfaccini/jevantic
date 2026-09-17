@@ -1,0 +1,30 @@
+:root { color-scheme: light; --ink:#162a38; --muted:#526674; --paper:#fbfaf6; --line:#d5ddd9; --accent:#196d68; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:var(--paper); font:17px/1.6 system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+main { max-width:980px; margin:0 auto; padding:40px 32px 64px; }
+nav,.eyebrow { font-size:13px; letter-spacing:.04em; color:var(--muted); }
+nav { display:flex; flex-wrap:wrap; gap:16px; margin-bottom:36px; }
+a { color:var(--accent); text-underline-offset:3px; }
+h1 { max-width:760px; font-size:clamp(32px,5vw,48px); line-height:1.12; letter-spacing:-.035em; margin:10px 0 20px; }
+h2 { font-size:25px; line-height:1.25; margin:36px 0 12px; }
+h3 { font-size:19px; margin:0 0 8px; }
+p { margin:0 0 16px; }
+.intro { max-width:760px; font-size:20px; }
+.muted,small { color:var(--muted); }
+.steps { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:28px 0; }
+.card { border-top:3px solid var(--accent); padding:20px; background:white; box-shadow:0 1px 0 var(--line); }
+.card small { display:block; margin-bottom:12px; }
+.card p:last-child { margin:0; }
+code { font:.88em ui-monospace,SFMono-Regular,Consolas,monospace; background:#eaf0eb; padding:2px 5px; border-radius:3px; overflow-wrap:anywhere; }
+.note { padding:18px 22px; border-left:3px solid var(--accent); background:#edf3ed; margin:24px 0; }
+details { border:1px solid var(--line); padding:16px 20px; margin:16px 0; background:white; }
+summary { font-weight:650; cursor:pointer; }
+details p { margin-top:14px; }
+details p:last-child { margin-bottom:0; }
+table { width:100%; border-collapse:collapse; font-size:15px; }
+th { text-align:left; color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.06em; }
+td,th { padding:14px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+td:first-child { width:22%; font-weight:650; }
+footer { border-top:1px solid var(--line); margin-top:36px; padding-top:18px; font-size:14px; color:var(--muted); }
+@media(max-width:680px) { main { padding:24px 20px 40px; } .steps { grid-template-columns:1fr; } td,th { padding:10px 6px; } }
+@media print { body { background:white; font-size:11pt; } main { max-width:none; padding:0; } nav,details { display:none; } h1 { font-size:26pt; } .card { box-shadow:none; border:1px solid #aaa; } a { color:inherit; } h2,h3 { break-after:avoid; } tr,.card,.note { break-inside:avoid; } footer { font-size:9pt; } }

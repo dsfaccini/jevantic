@@ -1,6 +1,6 @@
 # Jevantic discovery
 
-Updated: 2026-09-16
+Updated: 2026-09-17 UTC
 
 ## Confirmed requirements
 
@@ -13,6 +13,9 @@ Updated: 2026-09-16
 - Explore harness capabilities that benefit from typed decisions and Jev's execution characteristics.
 - Maintain a curated, persistent knowledge base with dedicated research subagents.
 - Develop shared understanding incrementally.
+- Focus on Jev; add another backend when a concrete need establishes its value.
+- Deliver useful workflows incrementally, beginning with small changes that have high impact. The initial examples do not define a permanent feature boundary.
+- Use Python 3.13 for local development and verification. Reserve Python 3.12 and 3.14 compatibility checks for CI.
 
 These requirements come from the project brief on 2026-09-16. They do not prescribe an agent loop, workflow engine, provider abstraction, or class hierarchy.
 
@@ -29,13 +32,13 @@ These requirements come from the project brief on 2026-09-16. They do not prescr
 
 | ID | Decision | Prerequisites | State |
 | --- | --- | --- | --- |
-| D1 | Jev-specific interface or support for other backends | None | Asked; awaiting answer |
-| D2 | Representative user workflows for the first interfaces | Workload and harness research | Asked; awaiting answer |
-| D3 | What Jevantic owns beyond individual model requests | D1, D2, provider contract | Open |
-| D4 | Engineering guarantees for the first usable release | D2, D3, Pydantic AI research | Open |
+| D1 | Jev-specific interface or support for other backends | None | Jev first; other backends when needed |
+| D2 | Representative user workflows for the first interfaces | Workload and harness research | Incremental priorities delegated; begin with small, high-impact uses |
+| D3 | What Jevantic owns beyond individual model requests | D1, D2, provider contract | Typed composition, input/answer validation, execution and metadata in the alpha; conveniences added from demonstrated uses |
+| D4 | Engineering guarantees for the first usable release | D2, D3, Pydantic AI research | Python scope agreed; other guarantees open |
 | D5 | Integration with harness capabilities | Standalone interface validated against D2 | Later |
 
-Research can proceed while a product decision is unanswered.
+The current backend and workflow priorities permit implementation to proceed. Consequential new abstractions remain subject to evidence from complete call sites.
 
 ## Progress
 
@@ -48,18 +51,23 @@ Research can proceed while a product decision is unanswered.
 - Compared reusable typed questions, caller-owned result schemas, and callable question builders with three independent design investigations.
 - Verified two offline interface probes using strict Pyright and execution. Typed handles preserve mixed answer types and selected local values; Pydantic schemas preserve named field types but need runtime checks for contradictory question metadata.
 - Executed offline SDK probes confirming client ownership, cancellation propagation, configured retries, typed malformed-response errors, and gaps in semantic answer validation. No live inference request was made.
+- Built an installable typed core experiment with explicit batches, SDK ownership, question-aware validation, and two complete assessment examples.
+- Verified the current offline suite on Python 3.13 with full branch coverage. Strict typing includes positive call-site assertions and automated rejection of intentionally invalid callers. Earlier exploratory compatibility runs predate the current CI-only policy for other interpreters.
+- Executed live checks with synthetic content. All three primitives and structured rubrics passed; omitted instructions and one-level Scores were accepted. An eleven-level Score was rejected with an explicit ten-level limit. Ambiguous answers satisfied the experimental numerical checks.
+- Addressed independently reproduced review findings: contradictory Choice/Score values, tuple/list rubric mismatches, and accidental character-by-character interpretation of a string rubric.
+- Addressed a second independent review: cancellation during owned-client shutdown now waits for cleanup; metadata reads the actual requested model after SDK defaults are applied.
+- Curated the official cookbooks and added a short lesson and reference glossary for the API vocabulary.
 
-See [candidate interfaces](interface-comparison.md), [verification plan](verification-plan.md), and [executed probe details](../../experiments/README.md). These are design evidence; no production package has been implemented.
+See [candidate interfaces](interface-comparison.md), [core design](core-experiment.md), [verification plan](verification-plan.md), and [executed evidence](../verification.md). The first alpha uses typed questions; its public names and conveniences can evolve with further workflows.
 
-## Current recommendations awaiting input
+## Current implementation sequence
 
-- D1: focus on Jev initially while preserving room for a second backend where it proves useful.
-- D2: use one live agent guard and one batch scorer to exercise distinct calling patterns.
-- Interface experiment: typed questions as the fundamental composition mechanism, with one small Pydantic schema facade to compare on the selected workflows. Ordinary Python functions can build questions without a decorator framework.
+- Establish the standalone typed core using command-risk assessment and multi-rubric scoring as executable examples.
+- Use cookbook evidence to add bounded fan-out over independent inputs, retaining typed results and caller control of concurrency.
+- Compare a small result-schema facade with the ordinary assessment functions before adding a schema compiler.
+- Plan harness integration against the resulting standalone interface, beginning with existing guardrail callback seams.
 
-These recommendations have been presented for discussion. None is an accepted scope decision.
-
-Further reversible experiments use D1 and D2's recommendations as working assumptions while answers are pending. They do not establish the production scope or public interface.
+The first two priorities follow the agreed incremental scope. A general workflow engine, universal guard thresholds, multi-provider framework, and arbitrary generative function calling have no current requirement.
 
 ## Process references
 

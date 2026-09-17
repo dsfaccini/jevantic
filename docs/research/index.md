@@ -1,16 +1,17 @@
 # Research index
 
-Updated: 2026-09-16
+Updated: 2026-09-17 UTC
 
 | Record | Evidence | Purpose |
 | --- | --- | --- |
 | [Observed workloads](use-cases.md) | Primary articles, author posts, example source | Understand concrete uses and their evidence limits |
+| [Cookbook patterns](cookbook-patterns.md) | Seven official TypeSafe cookbooks | Identify recurring composition and convenience opportunities |
 | [Jev semantics](jev-semantics.md) | Official TypeSafe documentation | Preserve decision and uncertainty semantics |
-| [Jev API contract](jev-api-contract.md) | OpenAPI, pinned SDK source, and offline HTTP-transport probes | Identify existing facilities and unresolved contracts |
+| [Jev API contract](jev-api-contract.md) | OpenAPI, pinned SDK source, offline HTTP-transport probes, and live synthetic requests | Identify existing facilities and verified contracts |
 | [Harness interfaces](harness-interfaces.md) | Pinned harness and installed core source | Identify integration points and lifecycle obligations |
 | [Pydantic AI patterns](pydantic-ai-patterns.md) | Pinned source, tests, and CI configuration | Make robustness and ergonomic typing concrete |
 
-Initial investigations, the Python SDK answer-type follow-up, and offline lifecycle/retry/response checks are recorded. No live inference request has been made.
+Initial investigations, the Python SDK answer-type follow-up, offline lifecycle/retry/response checks, and live contract checks are recorded. The [core experiment](../design/core-experiment.md) links implementation evidence.
 
 ## Evidence conventions
 

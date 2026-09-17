@@ -1,0 +1,80 @@
+{
+  "observed_at": "2026-09-17T02:08:55.288248+00:00",
+  "sdk_version": "0.6.0",
+  "input": {
+    "ticket": "I was charged twice for my subscription. Please refund the duplicate payment."
+  },
+  "observations": [
+    {
+      "case": "precision",
+      "status": 200,
+      "request_id": "req_01a0ad1fc3f37f7f8f87395b543f2499",
+      "response": {
+        "model": "jev-1.13.0",
+        "answers": {
+          "tone": {
+            "type": "choice",
+            "choice": "polite",
+            "confidence": 0.43,
+            "probabilities": {
+              "angry": 0.0,
+              "mildly_annoyed": 0.19,
+              "neutral": 0.21,
+              "polite": 0.53,
+              "frustrated": 0.01,
+              "concerned": 0.06
+            }
+          },
+          "impact": {
+            "type": "score",
+            "score": 1.08,
+            "confidence": 0.93,
+            "legend": {
+              "0": "No impact",
+              "1": "Small inconvenience",
+              "2": "Moderate difficulty",
+              "3": "Substantial disruption",
+              "4": "Severe harm"
+            },
+            "probabilities": {
+              "0": 0.0,
+              "1": 0.92,
+              "2": 0.08,
+              "3": 0.0,
+              "4": 0.0
+            }
+          },
+          "clarity": {
+            "type": "score",
+            "score": 3.66,
+            "confidence": 0.71,
+            "legend": {
+              "0": "Impossible to understand",
+              "1": "Partly clear",
+              "2": "Understandable",
+              "3": "Mostly clear",
+              "4": "Completely clear"
+            },
+            "probabilities": {
+              "0": 0.0,
+              "1": 0.0,
+              "2": 0.02,
+              "3": 0.3,
+              "4": 0.68
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 485,
+          "output_tokens": 99
+        }
+      },
+      "validation_errors": {},
+      "numeric_deltas": {
+        "tone": 0.0,
+        "impact": 0.0,
+        "clarity": 0.0
+      }
+    }
+  ]
+}

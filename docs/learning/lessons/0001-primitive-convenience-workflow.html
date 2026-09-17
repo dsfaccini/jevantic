@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>What belongs in Jevantic?</title><link rel="stylesheet" href="../assets/style.css"></head>
+<body><main>
+<nav aria-label="Learning pages"><span>Jevantic · Design vocabulary</span><a href="../reference/vocabulary.html">Keep the glossary open →</a></nav>
+<header><p class="eyebrow">ONE DESIGN DISTINCTION</p><h1>What belongs in Jevantic?</h1><p class="intro">Separate the judgment the model makes, the convenience the library provides, and the action the application takes.</p></header>
+<section class="steps" aria-label="Three layers of a decision">
+<article class="card"><small>01 · Primitive</small><h3>Measure a risk</h3><p>A Noul question asks whether a command could expose private data. Jev returns a probability.</p></article>
+<article class="card"><small>02 · Convenience API</small><h3>Make it easy to ask</h3><p>A reusable <code>assess_command()</code> function accepts a typed command record, builds the question, and returns the answer with request metadata.</p></article>
+<article class="card"><small>03 · Workflow</small><h3>Decide what happens</h3><p>The application compares that probability with its policy, then runs the command, requests review, or rejects it.</p></article>
+</section>
+<p>The first layer comes from <a href="https://docs.typesafe.ai/primitives">Jev's three primitives</a>: <strong>Noul</strong> estimates a yes outcome, <strong>Choice</strong> selects from supplied options, and <strong>Score</strong> evaluates an ordered rubric. The other layers are software we build around those answers.</p>
+<h2>“Convenience API” is the broad term</h2>
+<p><strong>Syntactic sugar</strong> is a narrower idea: shorter syntax with equivalent meaning. For example, Python's <code>@decorate</code> notation applies a decorator to a function. <a href="https://docs.python.org/3.13/reference/compound_stmts.html#function-definitions">The language reference shows the equivalent transformation.</a></p>
+<p><strong>Ergonomics</strong> describes how pleasant and hard to misuse an interface is. A <strong>convenience API</strong> improves ergonomics by packaging recurring work. It may also add substantive behavior, such as bounded concurrency, input validation, or preserving the type of a selected object.</p>
+<div class="note"><strong>The design question:</strong> What repetitive code does this helper remove, and what decisions does it make on the caller's behalf?</div>
+<h2>Try that distinction on a cookbook</h2>
+<p>A document review asks several questions in one request. A helper returns named, typed answers. The application rejects a document when its risk estimate exceeds a configured threshold.</p>
+<details><summary>Which part is the library convenience, and which part is policy?</summary><p>The helper that bundles questions and recovers typed answers is a convenience API. The rejection threshold is policy: it encodes the application's cost of a wrong decision. They can be composed without putting a universal threshold in the library.</p><p>The <a href="https://docs.typesafe.ai/cookbooks/parallel_questions">parallel questions cookbook</a> supplies a concrete shared-state example.</p></details>
+<h2>Typed does not mean true</h2>
+<p>Types and validation can establish that an answer is a <code>ScoreAnswer</code>, its probability values are valid, and its rubric matches the request. They cannot establish that the model judged the real situation correctly.</p>
+<p>A probability describes an outcome estimate. TypeSafe's <strong>confidence</strong> summarizes a distribution; it is a separate statistic. <a href="https://docs.typesafe.ai/confidence">Read the provider's confidence explanation</a> before treating either number as a policy threshold.</p>
+<footer>Next reference: <a href="../reference/vocabulary.html">the short glossary</a>. Ask the agent to apply any unclear term to the command-risk or draft-scoring example.</footer>
+</main></body></html>

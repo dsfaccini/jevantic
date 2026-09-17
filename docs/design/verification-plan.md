@@ -1,20 +1,20 @@
 # Requirements and verification
 
-Updated: 2026-09-16. This record separates the requested outcome from the evidence needed to claim it. Proposed engineering checks are not yet an accepted release specification.
+Updated: 2026-09-17 UTC. This record separates the full requested outcome from the current alpha and its executed evidence.
 
 ## Completion evidence
 
 | Requested outcome | Evidence that would establish it | Current evidence |
 | --- | --- | --- |
-| Standalone Python library named Jevantic | Installable package, documented public interface, successful use outside the repository | Research repository only |
-| Elegant, powerful typed interfaces | Representative complete call sites; strict static fixtures; validated results retaining question and option types | Offline typing probes pass; interface remains a proposal |
-| Flexible fundamental layer | Direct composition of supported Jev questions and state, including mixed and runtime-built requests | Provider contract researched; generic handle mechanism demonstrated offline |
-| Convenient recurring uses | Selected real workflows implemented and documented through the public interface | Workload evidence recorded; first proving workflows await selection |
-| Robustness comparable to the relevant Pydantic AI mechanisms | Public behavior, failure-path, lifecycle, typing, and documentation checks with an explicit coverage bar | Source reference recorded; no library runtime or test suite yet |
-| Maintainable classes and architecture | A small coherent interface, justified ownership and seams, independent review of implementation against requirements | Three candidates investigated; comparison and preliminary recommendation recorded |
+| Standalone Python library named Jevantic | Installable package, documented public interface, successful use outside the repository | Alpha wheel and source distribution build; installed wheel passes the behavioral suite and coverage; no publication |
+| Elegant, powerful typed interfaces | Representative complete call sites; strict static fixtures; validated results retaining question and option types | Core preserves literal, enum, and local object types; positive and negative static fixtures pass; conveniences remain incremental |
+| Flexible fundamental layer | Direct composition of supported Jev questions and state, including mixed and runtime-built requests | Three primitives, runtime options, mixed batches, and direct SDK encode/decode exercised |
+| Convenient recurring uses | Recurring workflows implemented and documented through the public interface | Command-risk and multi-rubric examples work offline and against Jev; bounded fan-out and a schema-facade comparison are next |
+| Robustness comparable to the relevant Pydantic AI mechanisms | Public behavior, failure-path, lifecycle, typing, and documentation checks with an explicit coverage bar | Core failure paths and ownership pass with 100% branch coverage on Python 3.13; configured Python 3.12/3.14 CI remains unrun |
+| Maintainable classes and architecture | A small coherent interface, justified ownership and seams, independent review of implementation against requirements | Two independent review passes reproduced six defects, addressed with regressions; SDK owns transport/retries, core owns typed composition and semantic validation |
 | Persistent curated knowledge with dedicated subagents | Source-linked records that distinguish facts, claims, proposals, and executed results | Initial research, interface findings, and executed probe evidence recorded |
-| Incremental shared understanding | Consequential choices recorded with their accepted rationale | Backend scope and first workflows remain unanswered |
-| Plan downstream harness capabilities after standalone validation | Capability mapping grounded in verified standalone behavior, with lifecycle and policy responsibilities specified | Initial interface map recorded; implementation and integration design remain later work |
+| Incremental shared understanding | Consequential choices recorded with their accepted rationale | Jev-first and incremental high-impact priorities agreed; Python scope recorded; vocabulary lesson and cookbook patterns curated |
+| Plan downstream harness capabilities after standalone validation | Capability mapping grounded in verified standalone behavior, with lifecycle and policy responsibilities specified | Initial interface map recorded; concrete integration plan still pending |
 
 ## Proposed engineering checks
 
@@ -34,13 +34,13 @@ These checks translate the [Pydantic AI reference](../research/pydantic-ai-patte
 | Observability | Clear request/error events and an explicit content-capture policy; secrets and application state do not enter logs accidentally |
 | Packaging and docs | Typed installed package, supported-version checks, executable examples, and documentation of semantic and lifecycle limits |
 
-No transport implementation, retry policy, telemetry dependency, batch convenience, or supported-version matrix has been chosen by listing these concerns.
+The current package reuses SDK transport and retries, provides explicit shared-state batches, and adds no telemetry. Python compatibility is configured in CI. Further execution conveniences and integration behavior must define their own guarantees rather than inherit them from this list.
 
 ## Unresolved provider evidence
 
-- Resolve documented versus encoded differences around omitted instructions and the minimum number of Score levels.
-- Establish numeric tolerance from real responses and the provider contract; do not invent normalization behavior that hides malformed data.
-- Offline probes now verify SDK response handling, cancellation propagation, injected-client closure, and configured retries. Real network behavior and provider-side cancellation remain unverified.
+- Live checks resolved the observed acceptance of omitted instructions and one-level Scores, plus the ten-level maximum. They describe the tested endpoint/model, not an immutable future guarantee.
+- Live responses satisfy the current numeric checks; tolerance remains an explicit experimental policy, with no normalization. Broader numerical edge cases still need release-level evidence.
+- Offline probes verify SDK response handling, cancellation propagation, injected-client closure, and configured retries. Successful real requests are recorded; provider-side cancellation and adverse network cleanup remain unverified.
 - Distinguish schema conformance from judgment accuracy and calibration. Library tests cannot establish model quality in every application domain.
 
 Source: [Jev API contract](../research/jev-api-contract.md).

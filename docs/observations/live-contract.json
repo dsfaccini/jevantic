@@ -1,0 +1,148 @@
+{
+  "observed_at": "2026-09-17T02:06:25.210624+00:00",
+  "sdk_version": "0.6.0",
+  "input": {
+    "ticket": "I was charged twice for my subscription. Please refund the duplicate payment."
+  },
+  "observations": [
+    {
+      "case": "three_primitives",
+      "status": 200,
+      "request_id": "req_01a0ad1d75bb7f90b2e101f964ce1c61",
+      "response": {
+        "model": "jev-1.13.0",
+        "answers": {
+          "refund": {
+            "type": "noul",
+            "noul": 0.99
+          },
+          "department": {
+            "type": "choice",
+            "choice": "billing",
+            "confidence": 1.0,
+            "probabilities": {
+              "billing": 1.0,
+              "technical": 0.0,
+              "shipping": 0.0
+            }
+          },
+          "urgency": {
+            "type": "score",
+            "score": 1.01,
+            "confidence": 0.98,
+            "legend": {
+              "0": "No action requested",
+              "1": "Routine request",
+              "2": "Immediate harm"
+            },
+            "probabilities": {
+              "0": 0.0,
+              "1": 0.99,
+              "2": 0.01
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 399,
+          "output_tokens": 69
+        }
+      },
+      "validation_errors": {},
+      "numeric_deltas": {
+        "department": 0.0,
+        "urgency": 0.0
+      }
+    },
+    {
+      "case": "structured_rubric",
+      "status": 200,
+      "request_id": "req_01a0ad1d76d37a7aad9e68728d868542",
+      "response": {
+        "model": "jev-1.13.0",
+        "answers": {
+          "fit": {
+            "type": "score",
+            "score": 1.0,
+            "confidence": 1.0,
+            "legend": {
+              "0": [
+                "Unrelated",
+                "No billing issue"
+              ],
+              "1": {
+                "meaning": "Concerns a charge or payment"
+              }
+            },
+            "probabilities": {
+              "0": 0.0,
+              "1": 1.0
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 337,
+          "output_tokens": 17
+        }
+      },
+      "validation_errors": {},
+      "numeric_deltas": {
+        "fit": 0.0
+      }
+    },
+    {
+      "case": "omitted_instructions",
+      "status": 200,
+      "request_id": "req_01a0ad1d77e07e8baf16217c718735a0",
+      "response": {
+        "model": "jev-1.13.0",
+        "answers": {
+          "refund": {
+            "type": "noul",
+            "noul": 0.91
+          }
+        },
+        "usage": {
+          "input_tokens": 303,
+          "output_tokens": 20
+        }
+      },
+      "validation_errors": {},
+      "numeric_deltas": {}
+    },
+    {
+      "case": "one_level_score",
+      "status": 200,
+      "request_id": "req_01a0ad1d78ef7cdeaab7e8260e52a5a0",
+      "response": {
+        "model": "jev-1.13.0",
+        "answers": {
+          "fit": {
+            "type": "score",
+            "score": 0.0,
+            "confidence": 1.0,
+            "legend": {
+              "0": "Billing request"
+            },
+            "probabilities": {
+              "0": 1.0
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 305,
+          "output_tokens": 17
+        }
+      },
+      "validation_errors": {},
+      "numeric_deltas": {
+        "fit": 0.0
+      }
+    },
+    {
+      "case": "eleven_level_score",
+      "status": 400,
+      "error_type": "TypeSafeBadRequestError",
+      "request_id": "req_01a0ad1d79ed79508950623327d97ced"
+    }
+  ]
+}

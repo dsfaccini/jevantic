@@ -1,0 +1,14 @@
+{
+  "installed_module": "/private/tmp/jevantic-wheel-check/lib/python3.10/site-packages/jevantic/__init__.py",
+  "command": {
+    "probability": 0.1,
+    "model": "jev-1.13.0",
+    "request_id": "req_01a0ad2556347b118afe9eb8231a7216"
+  },
+  "draft": {
+    "relevance": 1.92,
+    "clarity": 1.78,
+    "model": "jev-1.13.0",
+    "request_id": "req_01a0ad2557497700892a12cb7acb6717"
+  }
+}

@@ -1,6 +1,6 @@
 # Candidate interfaces
 
-Observed: 2026-09-16. Proposal, not an accepted public interface.
+Initial comparison: 2026-09-16. Updated 2026-09-17: typed questions and ordinary functions form the first alpha; the schema facade remains a proposal.
 
 Three independent design investigations considered reusable typed questions, caller-owned result schemas, and callable evaluations. The callable design converged on ordinary functions that build typed questions; it does not require a third execution framework.
 
@@ -91,7 +91,7 @@ Use typed questions as the fundamental composition mechanism. Permit ordinary fu
 
 Do not treat the two interfaces as independent runtimes. Validation, metadata, and transport behavior should have one owner. Reuse the SDK's injected transport for deterministic HTTP responses unless concrete evidence shows that a new seam is needed.
 
-This is a recommendation awaiting discussion. It does not settle the backend scope, proving workflows, public names, supported Python versions, or release surface. No production implementation has been selected.
+The first alpha now follows the typed-question foundation. Backend scope is Jev-first; local development uses Python 3.13 with other supported-version checks in CI. Workflow priorities are incremental rather than a fixed feature menu. Public names can evolve during the alpha, and a schema compiler still needs a complete comparison with ordinary assessment functions.
 
 ## Questions opened by the experiments
 
@@ -104,5 +104,7 @@ This is a recommendation awaiting discussion. It does not settle the backend sco
 ## Verification
 
 Strict Pyright and both offline scripts pass in the recorded environment. See the [experiment record](../../experiments/README.md) for exact scope, commands, versions, and limitations. No provider calls were made.
+
+The subsequent [typed core](core-experiment.md) adds executable SDK-backed assessments, failure-path tests, and live evidence. It is the initial alpha interface; the schema facade is not implemented.
 
 Process reference: [Design It Twice](https://github.com/mattpocock/skills/blob/959a8e9f1edc3adbe2f7e3054bb6fbefa6696260/skills/engineering/codebase-design/DESIGN-IT-TWICE.md).
