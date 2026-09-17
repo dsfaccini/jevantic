@@ -1,0 +1,5 @@
+{
+  "include": ["typed_questions.py", "typed_schema.py"],
+  "typeCheckingMode": "strict",
+  "pythonVersion": "3.10"
+}

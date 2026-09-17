@@ -6,8 +6,13 @@ The goal is a maintainable public interface with Pydantic AI's flexibility and e
 
 Current stage: research and conceptual design. No runtime implementation exists yet.
 
+Offline interface experiments pass strict type checking and execution. They establish type-system feasibility, not provider behavior or a selected public interface.
+
 - [Vocabulary](CONTEXT.md)
 - [Requirements, questions, and progress](docs/design/discovery.md)
+- [Candidate interface comparison](docs/design/interface-comparison.md)
+- [Requirements and verification](docs/design/verification-plan.md)
+- [Interface typing experiments](experiments/README.md)
 - [Research index](docs/research/index.md)
 
 Research records identify primary sources, code snapshots, evidence limits, and unresolved questions.

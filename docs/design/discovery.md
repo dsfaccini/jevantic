@@ -45,13 +45,18 @@ Research can proceed while a product decision is unanswered.
 - Recorded initial harness, Jev contract, and Pydantic AI investigations.
 - Created this standalone knowledge base.
 - Found that SDK responses do not preserve the static relationship between named questions and their individual answer types.
+- Compared reusable typed questions, caller-owned result schemas, and callable question builders with three independent design investigations.
+- Verified two offline interface probes using strict Pyright and execution. Typed handles preserve mixed answer types and selected local values; Pydantic schemas preserve named field types but need runtime checks for contradictory question metadata.
+
+See [candidate interfaces](interface-comparison.md), [verification plan](verification-plan.md), and [executed probe details](../../experiments/README.md). These are design evidence; no production package has been implemented.
 
 ## Current recommendations awaiting input
 
 - D1: focus on Jev initially while preserving room for a second backend where it proves useful.
 - D2: use one live agent guard and one batch scorer to exercise distinct calling patterns.
+- Interface experiment: typed questions as the fundamental composition mechanism, with one small Pydantic schema facade to compare on the selected workflows. Ordinary Python functions can build questions without a decorator framework.
 
-These recommendations have been presented for discussion. Neither is an accepted scope decision.
+These recommendations have been presented for discussion. None is an accepted scope decision.
 
 ## Process references
 
