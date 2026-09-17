@@ -37,6 +37,9 @@ async def typed_workflows(evaluator: Evaluator, candidates: list[Candidate]) -> 
     direct = await evaluator.evaluate('state', risk_question)
     assert_type(direct, Evaluation[NoulAnswer])
     assert_type(direct.value.probability, float)
+    many = await evaluator.evaluate_many(['one', 'two'], Question.choice(teams), concurrency=2)
+    assert_type(many, list[Evaluation[ChoiceAnswer[Team]]])
+    assert_type(many[0].value.selected, Team)
 
     batch = evaluator.batch('state')
     risk = batch.add('risk', risk_question)

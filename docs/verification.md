@@ -16,6 +16,7 @@ The standalone `jevantic` package builds as a source distribution and wheel, ver
 | Distribution build | Source distribution and wheel build successfully |
 | Installed wheel | The same behavioral suite and full branch-coverage check pass using the installed wheel on CPython 3.13.3 with the declared minimum Pydantic 2.10.0 |
 | Cancellation during close | Pass for repeated direct asyncio task cancellation and AnyIO scope cancellation on asyncio and Trio; owned closure completes, cancellation remains effective, original close failures propagate |
+| Independent-input fan-out | Pass on asyncio and Trio: ordered typed results, bounded in-flight work, lazy input, SDK retry reuse, iterator and provider errors, sibling cancellation, and caller-owned client reuse |
 | CI | Workflow configured for Python 3.12, 3.13, and 3.14; no hosted run has been performed |
 
 The installed-package check imported Jevantic from the isolated environment's `site-packages`, without a source-path override. Local development and checks now use Python 3.13 only. Earlier exploratory runs on other interpreters are not evidence for the current package's compatibility; the configured CI matrix owns that check.
@@ -26,9 +27,9 @@ From the repository root:
 
 ```sh
 uv sync --locked
-uv run coverage run -m pytest tests/test_evaluation.py tests/test_questions.py tests/test_lifecycle.py tests/test_examples.py -q
+uv run coverage run -m pytest tests/test_evaluation.py tests/test_questions.py tests/test_lifecycle.py tests/test_examples.py tests/test_fanout.py -q
 uv run coverage report --show-missing
-uv run pyright src/jevantic tests/conftest.py tests/test_evaluation.py tests/test_questions.py tests/test_lifecycle.py tests/test_examples.py tests/typed_api.py examples/assessments.py checks
+uv run pyright src/jevantic tests examples checks
 uv run python checks/typecheck_negative.py
 uv run ruff check src tests examples checks typecheck
 uv run ruff format --check src tests examples checks typecheck
@@ -57,11 +58,13 @@ The workflow observation records the earlier prototype's installed path under Py
 The opt-in commands below send paid provider requests. They are separate from the default suite and CI:
 
 ```sh
-uv run python checks/live_contract.py --env-file /path/to/.env --output /tmp/jevantic-contract.json
-uv run python checks/live_examples.py --env-file /path/to/.env --output /tmp/jevantic-examples.json
+uv run python -m checks.live_contract --env-file /path/to/.env --output /tmp/jevantic-contract.json
+uv run python -m checks.live_examples --env-file /path/to/.env --output /tmp/jevantic-examples.json
 ```
 
 The environment file supplies `TYPESAFE_API_KEY`. Scripts load it in process; recorded observations contain synthetic inputs, answers, statuses, and request identifiers, without authorization headers. `--case` on the contract script limits execution to one named case. Its eleven-level case deliberately uses the SDK directly because Jevantic rejects that rubric before I/O.
+
+The live-check commands use Python's module form so that the repository's example modules are importable. Both command-line parsers were checked with `--help`, without sending another provider request. The new fan-out and ranking example use the same evaluated primitive path and are covered offline; no new live accuracy or performance result is claimed for them.
 
 ## Evidence limits
 

@@ -23,8 +23,9 @@ it is not a policy.
 
 **Current core.** Explicit typed mixed `Batch` handles and
 `Question.noul`/`choice`/`select`/`score` already express the battery. A
-state-to-many-questions fan-out helper would be an ergonomic addition, not a
-new primitive.
+state-to-many-questions pattern can be repeated through ordinary Python. The
+current `evaluate_many` helper applies one reusable question to independent
+states with explicit concurrency and ordered typed results.
 
 Sources: [parallel questions](https://docs.typesafe.ai/cookbooks/parallel_questions.md),
 [LLM guardrails](https://docs.typesafe.ai/cookbooks/llm_guardrails.md).
@@ -91,8 +92,9 @@ concurrency and budget, confidence/gating thresholds, and whether a rejected
 result falls back to another path. Ranking is useful only relative to the
 application's candidate source and decision cost.
 
-**Current core.** `noul` plus typed batches supports explicit pair scoring. It
-does not provide ranking, candidate-pair fan-out, or a cascade helper.
+**Current core.** `evaluate_many` supports bounded pair scoring, and the
+document-ranking example combines it with a stable sort. Retrieval, thresholds,
+and any cascade remain ordinary application code.
 
 Sources: [re-ranking](https://docs.typesafe.ai/cookbooks/rerank_typesafe.md),
 [skill suggestion](https://docs.typesafe.ai/cookbooks/skill_suggestion.md).
@@ -163,9 +165,10 @@ replicated for Jevantic:
 
 ## Ergonomic gaps most clearly exposed
 
-1. **A bounded typed fan-out and result collector** for repeated question/state
-   pairs would remove boilerplate in re-ranking and taxonomy frontiers while
-   preserving caller concurrency and ordering controls.
+1. **Bounded typed fan-out and result collection** now support a reusable question
+   over independent states. Different per-node questions in a taxonomy frontier
+   still use explicit composition; the current convenience makes no promise to
+   schedule a heterogeneous collection of request definitions.
 2. **A schema-to-question compiler for closed-world actions** would turn typed
    signatures plus caller-written semantics into an inspectable dispatcher;
    it is distinct from arbitrary tool calling.

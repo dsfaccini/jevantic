@@ -18,6 +18,8 @@ quality_answer = result.answer(quality)  # ScoreAnswer
 
 `Evaluator.evaluate(state, question)` handles one question. `Question.choice()` preserves typed string labels, and `Question.select()` recovers original local objects from returned labels. Their probabilities and confidence remain available. [Complete assessment functions](../../examples/assessments.py) demonstrate a command-risk question and two rubric scores in one request.
 
+`Evaluator.evaluate_many(states, question, concurrency=...)` repeats a question over independent inputs using bounded workers. It consumes input lazily and returns one typed evaluation per input in the original order. A failure cancels unfinished work and raises an exception group with the original errors; evaluation failures carry their input index. The [ranking example](../../examples/ranking.py) composes this with a stable sort and preserves each original document object.
+
 The scoring example returns an ordinary dataclass with named fields. This is a concrete baseline for deciding whether a Pydantic schema declaration saves enough caller code to justify a compiler and its preflight checks.
 
 ## Responsibilities
@@ -27,7 +29,7 @@ The scoring example returns an ordinary dataclass with named fields. This is a c
 | `Question[T]` | Capture a question definition and validate/decode an SDK answer into `T` |
 | `Handle[T]` | Correlate a registered question with its typed answer in the originating batch |
 | `Batch` | Snapshot shared state, freeze registration at execution, perform an explicit repeatable evaluation |
-| `Evaluator` | Execute through one configured SDK client, validate answer names and kinds, retain response metadata |
+| `Evaluator` | Execute through one configured SDK client, validate answers, retain metadata, and coordinate explicitly bounded independent evaluations |
 | TypeSafe SDK | HTTP, authentication, timeout configuration, transport injection, retries, structural response decoding |
 | Application | Build questions with ordinary functions and decide what action follows an answer |
 
@@ -46,6 +48,6 @@ Each change has an offline regression. Numerical tolerances passed the recorded 
 
 ## Deliberate alpha boundaries
 
-Jev is the first backend. The package provides an async API and the three Jev primitives. Typed question composition is the initial foundation; a result-schema compiler, synchronous convenience methods, and telemetry hooks require concrete caller benefit before becoming public surface. Bounded fan-out is the next small convenience supported by cookbook evidence.
+Jev is the first backend. The package provides an async API, the three Jev primitives, shared-state batches, and bounded independent-input fan-out. Typed question composition is the initial foundation; a result-schema compiler, synchronous convenience methods, and telemetry hooks require concrete caller benefit before becoming public surface. Fan-out returns a complete ordered list or raises; a partial-results API is a separate future choice rather than an implicit error policy.
 
 No harness capability has changed. The [existing integration map](../research/harness-interfaces.md) is the reference for a plan grounded in the standalone interface.

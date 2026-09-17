@@ -11,3 +11,4 @@ async def invalid_calls(evaluator: Evaluator) -> None:
     await evaluator.evaluate(42, Question.noul())  # expect: reportArgumentType
     Question.choice({1: None})  # expect: reportArgumentType
     Question.select([object()])  # expect: reportArgumentType
+    await evaluator.evaluate_many(['one'], Question.noul(), concurrency='two')  # expect: reportArgumentType

@@ -1,6 +1,6 @@
 """Async evaluation, explicit batches, and SDK client ownership."""
 
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Awaitable, Callable, Iterable, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType, TracebackType
 from typing import Generic, Self, TypeVar
@@ -113,6 +113,39 @@ class Evaluator:
         handle = batch.add('answer', question)
         result = await batch.run()
         return Evaluation(result.answer(handle), result.info)
+
+    async def evaluate_many(
+        self,
+        states: Iterable[JsonContent | BaseModel],
+        question: Question[AnswerT],
+        *,
+        concurrency: int,
+    ) -> list[Evaluation[AnswerT]]:
+        """Evaluate independent inputs with bounded concurrency and ordered results.
+
+        Inputs are consumed lazily. Each has a separate request and result metadata.
+        On failure, unfinished work is cancelled and an ``ExceptionGroup`` retains
+        the original errors; evaluation errors include their input index in a note.
+        Completed results are not returned when the collection fails.
+        """
+        worker_slots = range(concurrency)
+        if isinstance(concurrency, bool) or concurrency < 1:
+            raise ValueError('Concurrency must be a positive integer')
+        results: dict[int, Evaluation[AnswerT]] = {}
+
+        async def worker() -> None:
+            for index, state in inputs:
+                try:
+                    results[index] = await self.evaluate(state, question)
+                except Exception as error:
+                    error.add_note(f'Jevantic input index: {index}')
+                    raise
+
+        async with anyio.create_task_group() as group:
+            inputs = enumerate(states)
+            for _ in worker_slots:
+                group.start_soon(worker)
+        return [results[index] for index in range(len(results))]
 
     async def _request(
         self,

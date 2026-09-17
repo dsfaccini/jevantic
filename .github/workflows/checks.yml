@@ -18,12 +18,12 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: uv sync --locked --python ${{ matrix.python }}
-      - run: uv run --python ${{ matrix.python }} coverage run -m pytest tests/test_evaluation.py tests/test_questions.py tests/test_lifecycle.py tests/test_examples.py -q
+      - run: uv run --python ${{ matrix.python }} coverage run -m pytest tests/test_evaluation.py tests/test_questions.py tests/test_lifecycle.py tests/test_examples.py tests/test_fanout.py -q
       - run: uv run --python ${{ matrix.python }} coverage report --show-missing
       - if: matrix.python == '3.13'
         run: |
           uv run ruff check src tests examples checks typecheck
           uv run ruff format --check src tests examples checks typecheck
-          uv run pyright src/jevantic tests/conftest.py tests/test_evaluation.py tests/test_questions.py tests/test_lifecycle.py tests/test_examples.py tests/typed_api.py examples/assessments.py checks
+          uv run pyright src/jevantic tests examples checks
           uv run python checks/typecheck_negative.py
           uv build

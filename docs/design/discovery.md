@@ -57,13 +57,15 @@ The current backend and workflow priorities permit implementation to proceed. Co
 - Addressed independently reproduced review findings: contradictory Choice/Score values, tuple/list rubric mismatches, and accidental character-by-character interpretation of a string rubric.
 - Addressed a second independent review: cancellation during owned-client shutdown now waits for cleanup; metadata reads the actual requested model after SDK defaults are applied.
 - Curated the official cookbooks and added a short lesson and reference glossary for the API vocabulary.
+- Added bounded independent-input fan-out and a document-ranking example. Public transport checks verify lazy consumption, ordering, SDK retries, cancellation, and error correlation.
+- Recorded a concrete [harness integration plan](harness-integration.md) using an existing sequential input-guardrail callback, with explicit ownership, policy, accounting, durability, and verification boundaries.
 
 See [candidate interfaces](interface-comparison.md), [core design](core-experiment.md), [verification plan](verification-plan.md), and [executed evidence](../verification.md). The first alpha uses typed questions; its public names and conveniences can evolve with further workflows.
 
 ## Current implementation sequence
 
 - Establish the standalone typed core using command-risk assessment and multi-rubric scoring as executable examples.
-- Use cookbook evidence to add bounded fan-out over independent inputs, retaining typed results and caller control of concurrency.
+- Bounded fan-out now supports independent inputs, retaining typed results and caller control of concurrency.
 - Compare a small result-schema facade with the ordinary assessment functions before adding a schema compiler.
 - Plan harness integration against the resulting standalone interface, beginning with existing guardrail callback seams.
 

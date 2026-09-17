@@ -1,6 +1,7 @@
 from conftest import Backend
 
 from examples.assessments import CommandContext, Draft, assess_command, assess_draft
+from examples.ranking import Document, rank_documents
 from jevantic import Evaluator
 
 
@@ -44,3 +45,21 @@ async def test_two_rubrics_share_one_request(backend: Backend) -> None:
         result = await assess_draft(evaluator, Draft(brief='Explain Jev', text='Jev estimates structured decisions.'))
     assert (result.relevance.score, result.clarity.score) == (1.5, 1.9)
     assert len(backend.transport.requests) == 1
+
+
+async def test_rank_documents_preserves_identity_and_stable_ties(backend: Backend) -> None:
+    documents: list[Document] = [
+        Document(identifier='first', text='Unrelated text'),
+        Document(identifier='second', text='First relevant text'),
+        Document(identifier='third', text='Second relevant text'),
+    ]
+    for probability in (0.1, 0.9, 0.9):
+        backend.respond({'answer': {'type': 'noul', 'noul': probability}})
+    result = await rank_documents(Evaluator(client=backend.client), 'query', documents, concurrency=2)
+    assert [item.document.identifier for item in result] == ['second', 'third', 'first']
+    assert [item.relevance.value.probability for item in result] == [0.9, 0.9, 0.1]
+    assert result[0].document is documents[1]
+    assert result[1].document is documents[2]
+    assert [request['state'] for request in backend.transport.requests] == [
+        {'query': 'query', 'document': item.text} for item in documents
+    ]

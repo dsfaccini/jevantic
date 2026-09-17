@@ -35,13 +35,19 @@ For several questions over the same state, use `batch = evaluator.batch(state)`,
 
 Plain Python functions can build questions from application dependencies. `Question.to_request()` and `Question.decode()` also support callers that manage SDK execution themselves.
 
+For the same question over independent inputs, use `await evaluator.evaluate_many(states, question, concurrency=4)`. The concurrency value is explicit: choose it for the application's traffic and provider limits. Inputs are consumed lazily by a bounded worker pool; results retain input order and each request's metadata. A shared-state batch and a collection of independent requests remain different operations.
+
+The [document-ranking example](examples/ranking.py) evaluates a retrieved shortlist, returns the original document objects, and preserves order in tied scores. Retrieval, relevance wording, thresholds, and any final selection remain application choices.
+
+If a collection fails, unfinished evaluations are cancelled and an `ExceptionGroup` retains the original errors. Evaluation errors carry a zero-based input index in an exception note, without the input content. The call returns no partial list. Some requests may already have completed or reached the provider; the collector does not repeat successful work automatically. SDK retries still apply separately to each request.
+
 ## Data and failures
 
 State and question content accept text, JSON objects, and JSON arrays. State also accepts a Pydantic model and follows its JSON serialization configuration. State is captured when a batch is created; question content is captured at construction. Local choice objects retain their identity and remain owned by the application.
 
 Answers must match the requested names, kinds, options, and rubric. Probabilities and confidence must be finite and within zero and one. A selected Choice must have maximal probability, allowing ties within `1e-6`; a Score must match the probability-weighted rubric within `1e-6` per level. Distributions use an absolute sum tolerance of `1e-6`. These experimental tolerances preserve the reported values without normalization. Provider confidence and the selected option's probability are distinct values.
 
-`QuestionError` reports invalid definitions. `ResponseValidationError` identifies a semantic response failure and retains the question name and request ID. SDK transport, HTTP, and structural decoding errors retain their original SDK types. Cancellation propagates through the SDK. Context exit closes an owned client and leaves a supplied client open.
+`QuestionError` reports invalid definitions. `ResponseValidationError` identifies a semantic response failure and retains the question name and request ID. Single evaluations preserve original SDK transport, HTTP, and structural decoding errors; `evaluate_many()` retains them inside its exception group. Cancellation propagates through the SDK. Context exit closes an owned client and leaves a supplied client open.
 
 Results retain provider-reported usage, the model identifier actually sent and the model returned, request ID, and the raw HTTP response. Missing usage counts remain `None`. Access to raw responses is explicit; Jevantic adds no telemetry. SDK logging configuration still applies, including its option to log bodies at debug level.
 
@@ -54,9 +60,9 @@ Run from this directory after `uv sync`:
 Local development is pinned to Python 3.13. The CI matrix covers Python 3.12, 3.13, and 3.14; additional interpreter runs belong in CI.
 
 ```sh
-uv run coverage run -m pytest tests/test_evaluation.py tests/test_questions.py tests/test_lifecycle.py tests/test_examples.py -q
+uv run coverage run -m pytest tests/test_evaluation.py tests/test_questions.py tests/test_lifecycle.py tests/test_examples.py tests/test_fanout.py -q
 uv run coverage report --show-missing
-uv run pyright src/jevantic tests/conftest.py tests/test_evaluation.py tests/test_questions.py tests/test_lifecycle.py tests/test_examples.py tests/typed_api.py examples/assessments.py checks
+uv run pyright src/jevantic tests examples checks
 uv run python checks/typecheck_negative.py
 uv run ruff check src tests examples checks typecheck
 uv run ruff format --check src tests examples checks typecheck
@@ -76,4 +82,5 @@ The observed API accepts a one-level Score and rejects more than ten levels. Jev
 - [Core design](docs/design/core-experiment.md) and [interface comparison](docs/design/interface-comparison.md)
 - [Requirements and verification](docs/design/verification-plan.md)
 - [Research index](docs/research/index.md), including cookbook patterns and harness interfaces
+- [First harness integration plan](docs/design/harness-integration.md)
 - [Initial design experiments](experiments/README.md)
