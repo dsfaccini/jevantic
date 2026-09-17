@@ -35,7 +35,7 @@ These requirements come from the project brief on 2026-09-16. They do not prescr
 | D1 | Jev-specific interface or support for other backends | None | Jev first; other backends when needed |
 | D2 | Representative user workflows for the first interfaces | Workload and harness research | Incremental priorities delegated; begin with small, high-impact uses |
 | D3 | What Jevantic owns beyond individual model requests | D1, D2, provider contract | Typed composition, input/answer validation, execution and metadata in the alpha; conveniences added from demonstrated uses |
-| D4 | Engineering guarantees for the first usable release | D2, D3, Pydantic AI research | Alpha guarantees and executed checks recorded; hosted compatibility checks pending |
+| D4 | Engineering guarantees for the first usable release | D2, D3, Pydantic AI research | Alpha guarantees and executed checks recorded; hosted Python 3.12/3.13/3.14 checks pass |
 | D5 | Integration with harness capabilities | Standalone interface validated against D2 | Concrete first guardrail plan recorded; implementation is a later integration task |
 
 The current backend and workflow priorities permit implementation to proceed. Consequential new abstractions remain subject to evidence from complete call sites.
@@ -60,6 +60,7 @@ The current backend and workflow priorities permit implementation to proceed. Co
 - Added bounded independent-input fan-out and a document-ranking example. Public transport checks verify lazy consumption, ordering, SDK retries, cancellation, and error correlation.
 - Recorded a concrete [harness integration plan](harness-integration.md) using an existing sequential input-guardrail callback, with explicit ownership, policy, accounting, durability, and verification boundaries.
 - Compared the complete fixed assessment with a result-schema facade. The facade saves four helper statements and none at the existing callers, while adding declaration checking; the alpha deliberately keeps ordinary typed assessment functions.
+- Created the private GitHub repository and verified the first hosted matrix: Python 3.12, 3.13, and 3.14 tests and 100% branch-coverage gates pass; static checks and package builds pass on Python 3.13. [Recorded run](https://github.com/dsfaccini/jevantic/actions/runs/35218750382).
 
 See [candidate interfaces](interface-comparison.md), [core design](core-experiment.md), [verification plan](verification-plan.md), and [executed evidence](../verification.md). The first alpha uses typed questions; its public names and conveniences can evolve with further workflows.
 

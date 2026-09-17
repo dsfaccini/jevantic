@@ -17,11 +17,13 @@ The standalone `jevantic` package builds as a source distribution and wheel, ver
 | Installed wheel | The same behavioral suite and full branch-coverage check pass using the installed wheel on CPython 3.13.3 with the declared minimum Pydantic 2.10.0 |
 | Cancellation during close | Pass for repeated direct asyncio task cancellation and AnyIO scope cancellation on asyncio and Trio; owned closure completes, cancellation remains effective, original close failures propagate |
 | Independent-input fan-out | Pass on asyncio and Trio: ordered typed results, bounded in-flight work, lazy input, SDK retry reuse, iterator and provider errors, sibling cancellation, and caller-owned client reuse |
-| CI | The [Checks workflow](https://github.com/dsfaccini/jevantic/actions/workflows/checks.yml) tests Python 3.12, 3.13, and 3.14; consult the run for a specific commit for its result |
+| CI | [Run 35218750382](https://github.com/dsfaccini/jevantic/actions/runs/35218750382) passes on Python 3.12, 3.13, and 3.14, including each 100% branch-coverage gate; the Python 3.13 job also passes typing, lint, formatting, and distribution builds |
 
 The installed-package check imported Jevantic from the isolated environment's `site-packages`, without a source-path override. Local development and checks now use Python 3.13 only. Earlier exploratory runs on other interpreters are not evidence for the current package's compatibility; the configured CI matrix owns that check.
 
 Ruff and Pyright target the declared minimum Python 3.12 while running locally under Python 3.13. This checks the minimum syntax and typing contract without installing or running another local interpreter.
+
+The recorded hosted run checks commit `b7c2b6d626d438213e339f7d8c91ee32ea552aeb`. For later revisions, inspect their own results in the [Checks workflow](https://github.com/dsfaccini/jevantic/actions/workflows/checks.yml); a previous green run does not prove a changed commit.
 
 The final source archive and wheel were rebuilt from the committed repository. Every packaged source file and `py.typed` matched the tested installation byte-for-byte. The source archive excluded the local `.env` and virtual environment.
 
