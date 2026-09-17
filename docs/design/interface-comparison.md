@@ -83,6 +83,8 @@ This adds no decorator registration, implicit request scheduling, or workflow en
 
 All three have leverage when removing repeated validation and type recovery from callers. The question interface offers locality around request execution and typed decoding; the schema interface adds locality around recurring fixed assessments. Their HTTP dependency is the same true external dependency, so this comparison does not justify parallel transport implementations.
 
+The [executed SDK probe](../research/jev-api-contract.md#executed-sdk-behavior) confirms that several semantic constraints are not enforced by SDK decoding: probability bounds, configured Choice labels, and correspondence to requested answer names. Validation against question definitions therefore has concrete work to own in either interface.
+
 ## Recommendation for the next experiment
 
 Use typed questions as the fundamental composition mechanism. Permit ordinary functions to construct them. Then build one small schema facade over that same mechanism and compare the complete call sites on the selected workloads. This retains the flexible layer while giving fixed assessments a route to familiar Pydantic ergonomics.

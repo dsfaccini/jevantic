@@ -1,6 +1,6 @@
 # Jev API and Python SDK
 
-Observed: 2026-09-16. This record combines provider documentation, a non-paid OpenAPI fetch, and SDK source inspection.
+Observed: 2026-09-16. This record combines provider documentation, a non-paid OpenAPI fetch, SDK source inspection, and offline execution through injected HTTP transports.
 
 ## HTTP contract
 
@@ -31,7 +31,30 @@ Inspected typesafe-sdk 0.6.0, Python >=3.10, commit [420ef4ff](https://github.co
 
 Sources at that commit: [public exports](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/__init__.py), [_core/client/aio/client.py](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/_core/client/aio/client.py), [_core/retry.py](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/_core/retry.py), [_core/errors.py](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/_core/errors.py), [_core/response_types.py](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/_core/response_types.py), [_core/logging.py](https://github.com/typesafe-ai/typesafe-sdk-python/blob/420ef4ffb612d5a539a1e0f0fe883ff6770340af/src/typesafe_sdk/_core/logging.py).
 
-No live cancellation, retry, or malformed-payload behavior was exercised.
+The offline checks below exercise cancellation, retries, lifecycle, and malformed payloads. No live provider request was made.
+
+## Executed SDK behavior
+
+The [reproducible probe](../../experiments/sdk_behavior.py) calls the public async SDK through local `httpx2.AsyncBaseTransport` implementations. Every client uses a fake key and a `.invalid` base URL. Observed with CPython 3.13.3, typesafe-sdk 0.6.0, and httpx2 2.13.0; execution and strict Pyright pass.
+
+| Case | Executed observation | Implication for Jevantic |
+| --- | --- | --- |
+| Borrowed HTTP client | SDK `aclose()` closes the supplied client and transport | A wrapper must define ownership explicitly; closing a borrowed SDK client also closes its underlying HTTP client |
+| Cancellation during a request | `CancelledError` propagates, the handler's `finally` runs, and no retry occurs | Ordinary async cancellation can propagate through this path |
+| Cancellation and closure | HTTP client and transport remain open after cancellation; explicit SDK closure then closes both | Request cancellation and client ownership are separate concerns |
+| 429 followed by success | A configured one-retry, zero-delay policy makes two attempts and retains the final request ID | Reuse SDK retry behavior rather than adding a second retry loop |
+| Repeated 500 | The same policy makes two attempts, then raises `TypeSafeInternalServerError` with status 500 and the final request ID | Typed provider errors already carry useful metadata |
+| Invalid known answer | A string where Noul requires a float raises `TypeSafeAPIResponseValidationError` with `answers.q.noul`, status 200, and request ID | Structural decoding errors already have a useful public category |
+| Unknown answer kind | The public answer mapping omits it; the raw HTTP response retains it | Public decoded answers alone do not expose every returned answer |
+| Semantically invalid result | SDK accepts Noul 1.5; Choice confidence -0.25; an unconfigured selected label and probability key; probability 1.2; and a missing requested answer | Jevantic needs validation against the actual question, beyond SDK scalar decoding |
+
+These are client observations from synthetic responses, not evidence that the live provider emits those responses. The cancellation check covers a pending injected transport handler, not remote server cancellation. Retry timing, real network resource cleanup, and live service behavior remain unverified.
+
+Command:
+
+```sh
+uv run --no-project --with typesafe-sdk==0.6.0 python experiments/sdk_behavior.py
+```
 
 ## Python type correlation
 
@@ -46,7 +69,7 @@ Sources at the same pinned commit: [question types](https://github.com/typesafe-
 ## Source conflicts and unknowns
 
 - Rendered HTTP documentation requires instructions and at least two Score levels. OpenAPI and SDK permit omitted instructions and a one-level Score.
-- Numeric range and distribution promises are stronger than the constraints encoded in OpenAPI and SDK float decoding.
+- Numeric range and distribution promises are stronger than the constraints encoded in OpenAPI and SDK float decoding. The offline probe confirms that several invalid numerical values and question/answer mismatches pass SDK decoding.
 - Generated wire usage includes billing_units, but the public SDK wrapper accommodates its absence from actual API responses.
 - Exact quotas, partial-batch behavior, idempotency, cancellation semantics, and the confidence formula remain unresolved.
 

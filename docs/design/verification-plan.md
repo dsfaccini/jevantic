@@ -40,7 +40,7 @@ No transport implementation, retry policy, telemetry dependency, batch convenien
 
 - Resolve documented versus encoded differences around omitted instructions and the minimum number of Score levels.
 - Establish numeric tolerance from real responses and the provider contract; do not invent normalization behavior that hides malformed data.
-- Verify SDK response handling, cancellation, injected-client ownership, and retry behavior through executable probes before relying on those mechanisms.
+- Offline probes now verify SDK response handling, cancellation propagation, injected-client closure, and configured retries. Real network behavior and provider-side cancellation remain unverified.
 - Distinguish schema conformance from judgment accuracy and calibration. Library tests cannot establish model quality in every application domain.
 
 Source: [Jev API contract](../research/jev-api-contract.md).

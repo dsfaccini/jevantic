@@ -6,11 +6,11 @@ Updated: 2026-09-16
 | --- | --- | --- |
 | [Observed workloads](use-cases.md) | Primary articles, author posts, example source | Understand concrete uses and their evidence limits |
 | [Jev semantics](jev-semantics.md) | Official TypeSafe documentation | Preserve decision and uncertainty semantics |
-| [Jev API contract](jev-api-contract.md) | OpenAPI and pinned SDK source | Identify existing facilities and unresolved contracts |
+| [Jev API contract](jev-api-contract.md) | OpenAPI, pinned SDK source, and offline HTTP-transport probes | Identify existing facilities and unresolved contracts |
 | [Harness interfaces](harness-interfaces.md) | Pinned harness and installed core source | Identify integration points and lifecycle obligations |
 | [Pydantic AI patterns](pydantic-ai-patterns.md) | Pinned source, tests, and CI configuration | Make robustness and ergonomic typing concrete |
 
-Initial investigations and the Python SDK answer-type follow-up are recorded. Runtime behavior beyond the OpenAPI fetch remains untested here.
+Initial investigations, the Python SDK answer-type follow-up, and offline lifecycle/retry/response checks are recorded. No live inference request has been made.
 
 ## Evidence conventions
 
