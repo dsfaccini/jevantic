@@ -20,8 +20,8 @@ def test_guardrails_reject_deferred_loading(
 ) -> None:
     with pytest.raises(UserError, match='cannot use deferred loading'):
         guardrail_type(
-            Jevaluator(client=backend.client),
             Question.noul(),
+            evaluator=Jevaluator(client=backend.client),
             accept=lambda _ctx, _evaluation: True,
             id='guard',
             defer_loading=True,

@@ -10,6 +10,7 @@ import subprocess
 import tempfile
 import textwrap
 from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
 
 FPS = 30
@@ -18,7 +19,6 @@ WIDTH = 1920
 HEIGHT = 1080
 ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = ROOT.parents[1]
-EXAMPLES = PROJECT_ROOT / 'examples' / 'comparisons.py'
 RSVG = Path('/opt/homebrew/bin/rsvg-convert')
 FFMPEG = Path('/opt/homebrew/bin/ffmpeg')
 FFPROBE = Path('/opt/homebrew/bin/ffprobe')
@@ -31,15 +31,16 @@ class Clip:
     before_label: str
     after_label: str
     supporting_line: str
+    source: str = 'comparisons.py'
 
 
 CLIPS = (
     Clip(
         name='choice',
-        headline='A choice returns your object.',
+        headline='Select directly from your objects.',
         before_label='Manual mapping',
-        after_label='Question.select',
-        supporting_line='The original object, with its type.',
+        after_label='Jevaluator.select',
+        supporting_line='Fields inferred. Original object returned.',
     ),
     Clip(
         name='fanout',
@@ -48,30 +49,50 @@ CLIPS = (
         after_label='evaluate_many',
         supporting_line='Bounded requests. Input-order results.',
     ),
+    Clip(
+        name='input-guardrail',
+        headline="Guard an agent's input.",
+        before_label='Explicit policy wiring',
+        after_label='InputGuardrail',
+        supporting_line='One condition. An explicit threshold.',
+        source='input_guardrail_comparison.py',
+    ),
+    Clip(
+        name='output-guardrail',
+        headline="Guard an agent's output.",
+        before_label='Explicit policy wiring',
+        after_label='OutputGuardrail',
+        supporting_line='Check the completed response.',
+        source='output_guardrail_comparison.py',
+    ),
 )
 
 
-def executable(name: str) -> str:
+def executable(name: Path) -> str:
     if shutil.which(str(name)):
         return str(name)
     raise RuntimeError(f'Required executable is unavailable: {name}')
 
 
-def marked_excerpt(clip: str, side: str) -> list[str]:
-    source = EXAMPLES.read_text(encoding='utf-8')
-    start = f'# clip: {clip}-{side}-start'
-    end = f'# clip: {clip}-{side}-end'
+@cache
+def marked_excerpt(clip: Clip, side: str) -> list[str]:
+    example = PROJECT_ROOT / 'examples' / clip.source
+    source = example.read_text(encoding='utf-8')
+    start = f'# clip: {clip.name}-{side}-start'
+    end = f'# clip: {clip.name}-{side}-end'
     try:
         body = source.split(start, 1)[1].split(end, 1)[0]
     except IndexError as error:
-        raise RuntimeError(f'Missing markers {start!r} / {end!r} in {EXAMPLES}') from error
+        raise RuntimeError(f'Missing markers {start!r} / {end!r} in {example}') from error
     return textwrap.dedent(body).strip().splitlines()
 
 
 def syntax_line(line: str) -> str:
     """Apply a deliberately restrained syntax treatment without changing the excerpt."""
     token = re.compile(
-        r"""('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|\b(?:async|await|return|for|in|with|as)\b|\b(?:Question|Option|Jevaluator)\b)"""
+        r"""('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|"""
+        r'\b(?:async|await|return|for|in|with|as)\b|'
+        r'\b(?:Question|Jevaluator|InputGuardrail|OutputGuardrail)\b)'
     )
     parts: list[str] = []
     position = 0
@@ -80,7 +101,7 @@ def syntax_line(line: str) -> str:
         value = html.escape(match.group())
         if value.startswith(('"', "'")):
             color = '#a8dba8'
-        elif value in {'Question', 'Option', 'Jevaluator'}:
+        elif value in {'Question', 'Jevaluator', 'InputGuardrail', 'OutputGuardrail'}:
             color = '#c9b5ff'
         else:
             color = '#f1c982'
@@ -91,19 +112,24 @@ def syntax_line(line: str) -> str:
 
 
 def card_svg(clip: Clip, side: str, opacity: float = 1.0) -> str:
-    code = marked_excerpt(clip.name, side)
+    code = marked_excerpt(clip, side)
+    excerpts = (marked_excerpt(clip, 'before'), marked_excerpt(clip, 'after'))
+    longest_line = max(len(line) for excerpt in excerpts for line in excerpt)
+    line_height = min(52, 260 / max(1, max(len(excerpt) for excerpt in excerpts) - 1))
+    font_size = min(30, 1468 / (longest_line * 0.61), line_height * 0.85)
     is_after = side == 'after'
     label = clip.after_label if is_after else clip.before_label
     accent = '#71b878' if is_after else '#8e72d8'
     label_color = '#a8dba8' if is_after else '#c9b5ff'
     card_y = 398
     code_y = card_y + 182
-    lines = []
+    lines: list[str] = []
     for number, line in enumerate(code, start=1):
-        y = code_y + (number - 1) * 52
+        y = code_y + (number - 1) * line_height
         lines.append(
             f'<text x="{192}" y="{y}" class="line-number">{number:02d}</text>'
-            f'<text x="{260}" y="{y}" class="code" xml:space="preserve">{syntax_line(line)}</text>'
+            f'<text x="{260}" y="{y}" class="code" style="font-size:{font_size:.2f}px" '
+            f'xml:space="preserve">{syntax_line(line)}</text>'
         )
     support = clip.supporting_line if is_after else ' '
     support_opacity = '1' if is_after else '0'

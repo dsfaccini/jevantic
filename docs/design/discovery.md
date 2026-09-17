@@ -16,6 +16,7 @@ Updated: 2026-09-17 UTC
 - Focus on Jev; add another backend when a concrete need establishes its value.
 - Deliver useful workflows incrementally, beginning with small changes that have high impact. The initial examples do not define a permanent feature boundary.
 - Use Python 3.13 for local development and verification. Reserve Python 3.12 and 3.14 compatibility checks for CI.
+- Derive decision inputs from declared dataclass and Pydantic fields, and remove setup that the library can supply without hiding policy or metadata. Breaking alpha API changes are permitted.
 
 These requirements come from the project brief on 2026-09-16. They do not prescribe an agent loop, workflow engine, provider abstraction, or class hierarchy.
 
@@ -64,12 +65,15 @@ The current backend and workflow priorities permit implementation to proceed. Co
 - Created two four-second comparison clips from tested examples for local-object selection and bounded independent-input evaluation.
 - Compared the complete fixed assessment with a result-schema facade. The facade saves four helper statements and none at the existing callers, while adding declaration checking; the alpha deliberately keeps ordinary typed assessment functions.
 - Created the private GitHub repository and verified the first hosted matrix: Python 3.12, 3.13, and 3.14 tests and 100% branch-coverage gates pass; static checks and package builds pass on Python 3.13. [Recorded run](https://github.com/dsfaccini/jevantic/actions/runs/35218750382).
+- Published `0.1.0a0` and made the repository public.
+- Implemented [direct decisions and inferred data](api-ergonomics.md): full-result evaluator methods, label and enum choices, object selection without wrappers, structured inputs, and declarative guardrails with optional evaluator ownership. Updated executable examples and comparison clips for the new interface; current verification is tracked separately below.
 
 See [candidate interfaces](interface-comparison.md), [core design](core-experiment.md), [verification plan](verification-plan.md), and [executed evidence](../verification.md). The first alpha uses typed questions; its public names and conveniences can evolve with further workflows.
 
 ## Current milestone and remaining verification
 
 - The standalone typed core supports command-risk assessment and multi-rubric scoring as executable examples.
+- The next alpha, `0.1.0a1`, introduces the simplified API and removes `Option`. It is not yet published; the README installs the current source.
 - Bounded fan-out now supports independent inputs, retaining typed results and caller control of concurrency.
 - The result-schema comparison supports keeping ordinary assessment functions in this alpha; a compiler is not an unimplemented alpha requirement.
 - The optional Pydantic AI integration provides `InputGuardrail` and `OutputGuardrail`. The [development guide](../development/capabilities.md) captures verified lessons for further capabilities.

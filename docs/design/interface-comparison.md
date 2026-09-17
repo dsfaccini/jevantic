@@ -2,6 +2,8 @@
 
 Initial comparison: 2026-09-16. Updated 2026-09-17: typed questions and ordinary functions form the first alpha. The complete assessment comparison below establishes why a schema compiler is not included.
 
+The candidate snippets record the prototype interfaces, including the removed `Option` wrapper. For the current direct methods and inferred object fields, see [API ergonomics](api-ergonomics.md) and the [reference](../reference.md).
+
 Three independent design investigations considered reusable typed questions, caller-owned result schemas, and callable evaluations. The callable design converged on ordinary functions that build typed questions; it does not require a third execution framework.
 
 ## What all candidates must preserve

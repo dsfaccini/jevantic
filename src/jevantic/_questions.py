@@ -10,7 +10,7 @@ from typing import Generic, TypeVar
 import typesafe_sdk
 
 from ._errors import QuestionError
-from ._json import JsonContent, content_snapshot
+from ._json import Content, JsonContent, content_snapshot
 
 AnswerT_co = TypeVar('AnswerT_co', covariant=True)
 ValueT = TypeVar('ValueT')
@@ -25,18 +25,6 @@ class NoulAnswer:
     """The model's probability of the question's yes outcome."""
 
     probability: float
-
-
-@dataclass(frozen=True)
-class Option[ValueT_co]:
-    """Associate a wire label with a local value and an optional model description.
-
-    The local value is never sent to the model. Its identity is retained in results.
-    """
-
-    key: str
-    value: ValueT_co
-    description: JsonContent | None = None
 
 
 @dataclass(frozen=True)
@@ -108,10 +96,10 @@ class Question(Generic[AnswerT_co]):  # noqa: UP046
 
     @staticmethod
     def noul(
-        instructions: JsonContent | None = None,
+        instructions: Content | None = None,
         *,
-        true: JsonContent | None = None,
-        false: JsonContent | None = None,
+        true: Content | None = None,
+        false: Content | None = None,
     ) -> 'Question[NoulAnswer]':
         """Ask for the probability of a yes outcome, with optional outcome descriptions."""
         definition = typesafe_sdk.Noul(
@@ -132,32 +120,47 @@ class Question(Generic[AnswerT_co]):  # noqa: UP046
 
     @staticmethod
     def choice(
-        criteria: Mapping[LabelT, JsonContent | None],
+        criteria: Mapping[LabelT, Content | None] | Iterable[LabelT],
         *,
-        instructions: JsonContent | None = None,
+        instructions: Content | None = None,
     ) -> 'Question[ChoiceAnswer[LabelT]]':
-        """Choose a label while retaining literal or string-enum types in the answer."""
-        return Question.select(
-            (Option(key, key, description) for key, description in criteria.items()),
-            instructions=instructions,
-        )
+        """Choose labels from a mapping, iterable, or string-enum class.
+
+        Mappings supply descriptions. Iterables use the labels themselves.
+        Literal and string-enum types are retained in the answer.
+        """
+        if isinstance(criteria, str):
+            raise QuestionError('Choice labels must be a collection, not a single string')
+        if isinstance(criteria, Mapping):
+            return Question.select(criteria.keys(), key=str, describe=criteria.__getitem__, instructions=instructions)
+        return Question.select(criteria, key=str, describe=lambda _: None, instructions=instructions)
 
     @staticmethod
     def select(
-        options: Iterable[Option[ValueT]],
+        options: Iterable[ValueT],
         *,
-        instructions: JsonContent | None = None,
+        key: Callable[[ValueT], str] | None = None,
+        describe: Callable[[ValueT], Content | None] | None = None,
+        instructions: Content | None = None,
     ) -> 'Question[ChoiceAnswer[ValueT]]':
-        """Choose a local typed value using labels and descriptions sent to Jev."""
+        """Choose an original object using its JSON, dataclass, or Pydantic data.
+
+        Descriptions are snapshotted at construction; results retain the exact
+        local objects. Supply ``describe`` to choose the data sent to Jev, or
+        return ``None`` to send only keys. ``key`` overrides generated ordinal
+        keys when meaningful application identifiers are needed.
+        """
         values: dict[str, ValueT] = {}
         criteria: dict[str, typesafe_sdk.JSONContent | None] = {}
-        for option in options:
-            if option.key in values:
+        for index, option in enumerate(options):
+            option_key = str(index) if key is None else key(option)
+            if option_key in values:
                 raise QuestionError('Choice option keys must be unique')
             if len(values) == 255:
                 raise QuestionError('Jev Choice questions accept at most 255 options')
-            values[option.key] = option.value
-            criteria[option.key] = content_snapshot(option.description) if option.description is not None else None
+            description = option if describe is None else describe(option)
+            values[option_key] = option
+            criteria[option_key] = content_snapshot(description) if description is not None else None
         if not values:
             raise QuestionError('A Choice question needs at least one option')
         definition = typesafe_sdk.Choice(
@@ -187,9 +190,9 @@ class Question(Generic[AnswerT_co]):  # noqa: UP046
 
     @staticmethod
     def score(
-        criteria: Sequence[JsonContent],
+        criteria: Sequence[Content],
         *,
-        instructions: JsonContent | None = None,
+        instructions: Content | None = None,
     ) -> 'Question[ScoreAnswer]':
         """Score against ordered descriptions, retaining fractional scores and the rubric.
 

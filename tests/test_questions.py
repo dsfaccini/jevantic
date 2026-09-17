@@ -4,7 +4,7 @@ import pytest
 import typesafe_sdk
 from pydantic import JsonValue, ValidationError
 
-from jevantic import JsonContent, NoulAnswer, Option, Question, QuestionError
+from jevantic import JsonContent, NoulAnswer, Question, QuestionError
 
 
 @pytest.mark.parametrize('probability', [0.0, 0.4, 1.0])
@@ -106,9 +106,13 @@ def test_question_definition_errors() -> None:
     with pytest.raises(QuestionError, match='at least one option'):
         Question.choice({})
     with pytest.raises(QuestionError, match='unique'):
-        Question.select([Option('a', 1), Option('a', 2)])
+        Question.select([1, 2], key=lambda _: 'a', describe=lambda _: None)
     with pytest.raises(QuestionError, match='255'):
-        Question.select(Option(str(index), index) for index in range(256))
+        Question.select(range(256), describe=lambda _: None)
+    with pytest.raises(QuestionError, match='single string'):
+        Question.choice('allow')
+    with pytest.raises(QuestionError, match='unique'):
+        Question.choice(['same', 'same'])
     with pytest.raises(QuestionError, match='nonempty rubric'):
         Question.score([])
     with pytest.raises(QuestionError, match='single string'):
@@ -116,7 +120,7 @@ def test_question_definition_errors() -> None:
     with pytest.raises(QuestionError, match='at most 10'):
         Question.score(['level'] * 11)
     assert isinstance(Question.score(['level'] * 10).to_request(), typesafe_sdk.Score)
-    question = Question.select(Option(str(index), index) for index in range(255))
+    question = Question.select(range(255), describe=lambda _: None)
     request = question.to_request()
     assert isinstance(request, typesafe_sdk.Choice)
     assert len(request.criteria) == 255

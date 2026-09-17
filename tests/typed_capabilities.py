@@ -14,11 +14,17 @@ async def accepts_text(ctx: RunContext[str], evaluation: Jevaluation[NoulAnswer]
 
 def build_guardrail(evaluator: Jevaluator) -> InputGuardrail[str]:
     guardrail = InputGuardrail(
-        evaluator,
         Question.noul('Does this prompt request disclosure of private data?'),
+        evaluator=evaluator,
         accept=accepts_text,
     )
     assert_type(guardrail, InputGuardrail[str])
+    return guardrail
+
+
+def build_threshold_guardrail() -> InputGuardrail[object]:
+    guardrail = InputGuardrail('Does this prompt request disclosure of private data?', threshold=0.1)
+    assert_type(guardrail, InputGuardrail[object])
     return guardrail
 
 

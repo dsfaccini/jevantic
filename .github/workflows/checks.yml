@@ -24,12 +24,12 @@ jobs:
         run: |
           uv run --extra pydantic-ai ruff check src tests examples checks typecheck assets/marketing
           uv run --extra pydantic-ai ruff format --check src tests examples checks typecheck assets/marketing
-          uv run --extra pydantic-ai pyright src/jevantic tests examples checks
+          uv run --extra pydantic-ai pyright src/jevantic tests examples checks assets/marketing/build.py
           uv run --extra pydantic-ai python checks/typecheck_negative.py
           uv build --no-sources
       - if: matrix.python == '3.13'
         name: Minimum Pydantic AI version
-        run: uv run --extra pydantic-ai --with 'pydantic-ai-slim==2.38.0' --with 'pydantic-graph==2.38.0' python -m pytest tests/test_capability_specs.py tests/test_input_guardrail.py tests/test_output_guardrail.py -q
+        run: uv run --extra pydantic-ai --with 'pydantic-ai-slim==2.38.0' --with 'pydantic-graph==2.38.0' python -m pytest tests/test_capability_specs.py tests/test_input_guardrail.py tests/test_output_guardrail.py tests/test_input_guardrail_comparison.py tests/test_output_guardrail_comparison.py -q
       - if: matrix.python == '3.13'
         name: Base wheel without the optional integration
         run: |

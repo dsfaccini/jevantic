@@ -1,12 +1,11 @@
 """Complete comparisons between manual orchestration and Jevantic conveniences."""
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import anyio
-from pydantic import BaseModel
 
-from jevantic import Jevaluation, Jevaluator, JsonContent, Option, Question
+from jevantic import Content, Jevaluation, Jevaluator, JsonContent, Question
 
 
 @dataclass(frozen=True)
@@ -15,48 +14,36 @@ class Candidate:
 
     identifier: str
     summary: str
-    private_note: str
+    private_note: str = field(metadata={'exclude': True})
 
 
 CANDIDATE_INSTRUCTIONS = 'Select the candidate whose experience best matches the role requirements.'
 
 
-async def select_candidate_before(
-    evaluator: Jevaluator, state: JsonContent | BaseModel, candidates: Iterable[Candidate]
-) -> Candidate:
+async def select_candidate_before(evaluator: Jevaluator, state: Content, candidates: Iterable[Candidate]) -> Candidate:
     """Select a candidate by manually recovering its local object from a ``Choice`` label."""
-    candidates_by_id: dict[str, Candidate] = {}
-    for candidate in candidates:
-        if candidate.identifier in candidates_by_id:
-            raise ValueError('Candidate identifiers must be unique')
-        candidates_by_id[candidate.identifier] = candidate
     # clip: choice-before-start
-    question = Question.choice(
-        {key: c.summary for key, c in candidates_by_id.items()},
-        instructions=CANDIDATE_INSTRUCTIONS,
-    )
+    by_key: dict[str, Candidate] = {str(index): candidate for index, candidate in enumerate(candidates)}
+    criteria: dict[str, JsonContent | None] = {
+        key: {'identifier': c.identifier, 'summary': c.summary} for key, c in by_key.items()
+    }
+    question = Question.choice(criteria, instructions=CANDIDATE_INSTRUCTIONS)
     evaluation = await evaluator.evaluate(state, question)
-    return candidates_by_id[evaluation.value.selected]
+    return by_key[evaluation.value.selected]
     # clip: choice-before-end
 
 
-async def select_candidate_after(
-    evaluator: Jevaluator, state: JsonContent | BaseModel, candidates: Iterable[Candidate]
-) -> Candidate:
+async def select_candidate_after(evaluator: Jevaluator, state: Content, candidates: Iterable[Candidate]) -> Candidate:
     """Select a candidate while Jevantic retains the original local object."""
     # clip: choice-after-start
-    question = Question.select(
-        (Option(c.identifier, c, c.summary) for c in candidates),
-        instructions=CANDIDATE_INSTRUCTIONS,
-    )
-    evaluation = await evaluator.evaluate(state, question)
+    evaluation = await evaluator.select(state, candidates, instructions=CANDIDATE_INSTRUCTIONS)
     return evaluation.value.selected
     # clip: choice-after-end
 
 
 async def evaluate_many_before[AnswerT](
     evaluator: Jevaluator,
-    states: Iterable[JsonContent | BaseModel],
+    states: Iterable[Content],
     question: Question[AnswerT],
     *,
     concurrency: int,
@@ -86,7 +73,7 @@ async def evaluate_many_before[AnswerT](
 
 async def evaluate_many_after[AnswerT](
     evaluator: Jevaluator,
-    states: Iterable[JsonContent | BaseModel],
+    states: Iterable[Content],
     question: Question[AnswerT],
     *,
     concurrency: int,

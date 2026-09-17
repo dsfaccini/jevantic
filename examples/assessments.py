@@ -27,12 +27,12 @@ class DraftAssessment:
 
 async def assess_command(evaluator: Jevaluator, context: CommandContext) -> Jevaluation[NoulAnswer]:
     """Return a risk estimate for the application to interpret under its own policy."""
-    question = Question.noul(
+    return await evaluator.noul(
+        context,
         'Could the proposed command expose credentials or private data outside the intended workspace?',
         true='The command could disclose sensitive data.',
         false='The command does not disclose sensitive data.',
     )
-    return await evaluator.evaluate(context, question)
 
 
 async def assess_draft(evaluator: Jevaluator, draft: Draft) -> DraftAssessment:

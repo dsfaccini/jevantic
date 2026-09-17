@@ -30,8 +30,8 @@ def response(_: list[ModelMessage], __: AgentInfo) -> ModelResponse:
 
 def output_guardrail(backend: Backend, accept: AcceptPolicy = allow) -> OutputGuardrail[object]:
     return OutputGuardrail(
-        Jevaluator(client=backend.client),
         Question.noul('Could this response disclose private data?'),
+        evaluator=Jevaluator(client=backend.client),
         accept=accept,
     )
 
@@ -49,6 +49,67 @@ async def test_allowed_output_is_evaluated_after_the_model(backend: Backend) -> 
 
     assert (result.output, calls) == ('allowed', 1)
     assert backend.transport.requests[0]['state'] == {'output': 'allowed'}
+
+
+async def test_threshold_allows_an_output_below_the_threshold(backend: Backend) -> None:
+    backend.respond({'answer': {'type': 'noul', 'noul': 0.09}})
+    guardrail = OutputGuardrail(
+        'Could this response disclose private data?',
+        threshold=0.1,
+        evaluator=Jevaluator(client=backend.client),
+    )
+
+    result = await Agent(FunctionModel(response), capabilities=[guardrail]).run('prompt')
+
+    assert result.output == 'allowed'
+    assert backend.transport.requests[0]['state'] == {'output': 'allowed'}
+
+
+async def test_threshold_rejects_equality_and_closes_an_owned_evaluator(
+    backend: Backend, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    created_api_keys: list[str | None] = []
+
+    def create_client(*, api_key: str | None) -> typesafe_sdk.AsyncTypeSafeClient:
+        created_api_keys.append(api_key)
+        return backend.client
+
+    monkeypatch.setattr(typesafe_sdk, 'AsyncTypeSafeClient', create_client)
+    backend.respond({'answer': {'type': 'noul', 'noul': 0.1}})
+
+    with pytest.raises(GuardrailRejected) as caught:
+        await Agent(
+            FunctionModel(response),
+            capabilities=[OutputGuardrail('Could this response disclose private data?', threshold=0.1)],
+        ).run('prompt')
+
+    assert caught.value.evaluation.value == NoulAnswer(0.1)
+    assert created_api_keys == [None]
+    assert backend.transport.closed
+
+
+async def test_no_evaluator_is_created_when_the_run_fails_before_completion(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    created = False
+
+    def create_client(*, api_key: str | None) -> typesafe_sdk.AsyncTypeSafeClient:
+        nonlocal created
+        created = True
+        raise AssertionError('The evaluator should not be created')
+
+    def fail(_: list[ModelMessage], __: AgentInfo) -> ModelResponse:
+        raise RuntimeError('model failed')
+
+    monkeypatch.setattr(typesafe_sdk, 'AsyncTypeSafeClient', create_client)
+
+    with pytest.raises(RuntimeError, match='model failed'):
+        await Agent(
+            FunctionModel(fail),
+            capabilities=[OutputGuardrail('Could this response disclose private data?', threshold=0.1)],
+        ).run('prompt')
+
+    assert not created
 
 
 class ReplaceProcessedOutput(AbstractCapability[object]):
@@ -295,7 +356,7 @@ async def test_cancellation_propagates_and_leaves_the_borrowed_client_open() -> 
         api_key='offline-test-key', base_url='https://jevantic.invalid', transport=transport
     ) as client:
         evaluator = Jevaluator(client=client)
-        guardrail = OutputGuardrail(evaluator, Question.noul(), accept=allow)
+        guardrail = OutputGuardrail(Question.noul(), evaluator=evaluator, accept=allow)
         task = asyncio.create_task(Agent(FunctionModel(response), capabilities=[guardrail]).run('prompt'))
         await asyncio.wait_for(transport.started.wait(), timeout=1)
         task.cancel()

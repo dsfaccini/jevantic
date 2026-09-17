@@ -1,13 +1,17 @@
 # Jevantic comparison clips
 
-Two silent, four-second 1920×1080 `MP4` clips compare a small caller-owned implementation with the corresponding Jevantic convenience API.
+Four silent, four-second 1920×1080 `MP4` clips compare explicit caller wiring with the corresponding Jevantic convenience API.
 
 | Clip | Before | After | Timing |
 | --- | --- | --- | --- |
-| `choice` | Manual mapping | `Question.select` | 1.9s / 0.2s fade / 1.9s |
+| `choice` | Manual mapping | `Jevaluator.select` | 1.9s / 0.2s fade / 1.9s |
 | `fanout` | Custom orchestration | `evaluate_many` | 1.9s / 0.2s fade / 1.9s |
+| `input-guardrail` | Question, evaluator, callback | `block_if` and `threshold` | 1.9s / 0.2s fade / 1.9s |
+| `output-guardrail` | Question, evaluator, callback | `block_if` and `threshold` | 1.9s / 0.2s fade / 1.9s |
 
-The snippets are read directly from the marked blocks in [the complete runnable comparison](../../examples/comparisons.py). This prevents marketing media from drifting from the examples. The cards identify their content as an excerpt; the source is the full example.
+The snippets come directly from marked blocks in the [core comparison](../../examples/comparisons.py), [input guardrail comparison](../../examples/input_guardrail_comparison.py), and [output guardrail comparison](../../examples/output_guardrail_comparison.py). Their tests exercise the complete functions through the SDK, using deterministic local HTTP responses. The guardrail comparisons show two supported ways to express the same policy. They do not present historical syntax as executable current code.
+
+The cards identify their content as an excerpt. Font size and line spacing account for the complete excerpt, with the same scale on both sides of each comparison.
 
 ## Reproduce
 

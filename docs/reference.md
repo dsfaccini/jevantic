@@ -2,23 +2,25 @@
 
 This page records the current alpha contracts behind the examples in the [README](../README.md). These details can change as the public interface evolves.
 
-## Questions and content
+## Direct decisions and content
 
-`Question.noul()` asks for the probability of a yes outcome and returns a `NoulAnswer`.
+`Jevaluator.noul(state, instructions, ...)`, `Jevaluator.choice(state, criteria, ...)`, `Jevaluator.select(state, options, ...)`, and `Jevaluator.score(state, criteria, ...)` return `Jevaluation` with the matching `NoulAnswer`, `ChoiceAnswer`, or `ScoreAnswer` and its `ResponseInfo`.
 
-`Question.choice()` accepts a mapping of string labels to descriptions and returns a `ChoiceAnswer` whose `selected` value and distribution entries retain the mapping's literal-string or `StrEnum` type.
+`Content` accepts `JsonContent`, a Pydantic `BaseModel`, or a dataclass instance. Pydantic models use JSON-mode serialization. Dataclass instances use Pydantic's dataclass serialization, including `field(metadata={'exclude': True})`; Pydantic models support `Field(exclude=True)`. Both exclusions were exercised with Pydantic 2.10.0 and 2.13.5. Jevantic has no `repr()` or `__dict__` fallback.
 
-`Question.select()` accepts `Option(key, value, description)` values. Jev receives only their keys and descriptions; `ChoiceAnswer.selected` is the exact local `value` object associated with the returned key. Option keys must be unique, and a `Choice` question needs between one and 255 options.
+`Jevaluator.choice()` and `Question.choice()` accept a label-to-description mapping, an iterable of typed labels, or a `StrEnum` class. Mappings provide descriptions; iterable labels send keys only. Literal and `StrEnum` label types survive in `ChoiceAnswer`. A bare string and duplicate labels are rejected.
+
+`Jevaluator.select()` and `Question.select()` take local objects directly. They generate ordinal wire keys and snapshot inferred object descriptions at construction. `key=` supplies application keys, and `describe=` supplies a different description; `describe=lambda item: None` sends keys only. `ChoiceAnswer.selected` is the exact selected object instance.
+
+`Question` remains available for reusable questions, `Batch` registration, and `evaluate_many()`. `Question.to_request()` builds an independent TypeSafe SDK question, and `Question.decode()` validates and decodes an SDK answer for callers that manage SDK execution themselves.
+
+`Option` has been removed. Replace `Question.select(Option(key, value, description) for ...)` with `Question.select(values, key=..., describe=...)`, or use `Jevaluator.select(state, values, ...)` for a direct evaluation.
 
 `Question.score()` accepts a nonempty sequence of ordered rubric descriptions and returns a `ScoreAnswer`. Its levels are numbered from zero. Jevantic accepts at most ten levels; live provider observations accept one level and reject eleven, while provider guidance recommends at least two.
 
-State and question content accept text, JSON objects, and JSON arrays. State also accepts a Pydantic model and follows its JSON serialization configuration. Jevantic snapshots state when `Jevaluator.batch()` is called and question content when a `Question` is constructed.
-
-`Question.to_request()` builds an independent TypeSafe SDK question, and `Question.decode()` validates and decodes an SDK answer for callers that manage SDK execution themselves.
-
 ## Batches and single evaluations
 
-`Jevaluator.evaluate(state, question)` evaluates one question and returns `Jevaluation`, containing the typed `value` and `ResponseInfo` metadata.
+`Jevaluator.evaluate(state, question)` is the advanced equivalent for an existing `Question`; it returns `Jevaluation`, containing the typed `value` and `ResponseInfo` metadata.
 
 `Jevaluator.batch(state)` creates a `Batch` for several questions over one shared state. Keep the typed handles returned by `batch.add(name, question)` and retrieve answers through `result.answer(handle)`. A batch needs at least one uniquely named question. Its first `run()` freezes registration; later `run()` calls deliberately repeat the same batch and produce independent results. SDK retry policy can make additional HTTP attempts within a run.
 
@@ -48,21 +50,25 @@ Owned-client shutdown completes before cancellation leaves `aclose()`. Cleanup u
 
 Each `Jevaluation` or `BatchResult` retains `ResponseInfo`: provider-reported usage, the model sent after SDK configuration, the model returned by the provider, request ID, and raw HTTP response. Missing usage counts remain `None`. Access to raw responses is explicit. Jevantic adds no telemetry, although TypeSafe SDK logging configuration still applies, including its option to log bodies at debug level.
 
-## Pydantic AI input guardrail
+## Pydantic AI guardrails
 
-Install this optional capability with the `pydantic-ai` extra. `InputGuardrail[DepsT](evaluator, question, *, accept=...)` accepts an `Jevaluator`, a `Question[NoulAnswer]`, and a synchronous or asynchronous policy. The policy receives `RunContext[DepsT]` and `Jevaluation[NoulAnswer]`, and must return a plain `bool`. The guardrail borrows the supplied evaluator; it never closes it.
+Install guardrails with the `pydantic-ai` extra. Both `InputGuardrail` and `OutputGuardrail` take `block_if: str | Question[NoulAnswer]`, plus exactly one of `threshold=` or `accept=`. There is no default threshold. `threshold` must be a finite probability from zero through one and rejects when the probability is greater than or equal to it. An `accept` callback may be synchronous or asynchronous, receives `RunContext[DepsT]` and `Jevaluation[NoulAnswer]`, and must return a plain `bool`.
 
-For each run, `InputGuardrail` evaluates only the first model request. It sends exactly `{'prompt': original_plain_text}` as Jevantic state, then calls the primary model when the policy returns `True`. A `False` result raises `GuardrailRejected` with `stage == 'input'` and the complete `evaluation`; its `evaluation.info` retains the response metadata. The protected model request does not run. New plain-text prompts with explicit history are supported. `None` and multimodal prompts are rejected before an evaluator request.
+Pass `evaluator=` for a caller-owned `Jevaluator`; the guardrail borrows it. Without one, a guardrail creates and closes an evaluator for each evaluation. A string `block_if` becomes a `Noul` question. Pass a `Question[NoulAnswer]` with `accept=` for a custom policy.
 
-`InputGuardrail.get_serialization_name()` returns `None`, so the capability is excluded from serializable agent specifications. An active durable-execution capability is rejected before evaluation because Jevantic evaluations are not checkpointed. Guardrails reject `defer_loading=True`: their checks must be active when the run begins.
+The former positional constructor is removed. Change `InputGuardrail(evaluator, Question.noul(...), accept=policy)` to `InputGuardrail(Question.noul(...), evaluator=evaluator, accept=policy)`; `OutputGuardrail` migrates the same way. For the common case, use `InputGuardrail('...', threshold=0.1)` or `OutputGuardrail('...', threshold=0.1)`.
 
-Each evaluation emits an immediate, content-free `GuardrailEvaluated` event containing the stage, acceptance decision, probability, model metadata, request ID, and token counts. Register `Hooks.on.event(GuardrailEvaluated)` to receive it on Pydantic AI 2.38 or later. An event-stream handler can miss the event when a rejection ends the run, while the immediate hook has already received it.
+### Input
 
-## Pydantic AI output guardrail
+For each run, `InputGuardrail` evaluates only the first model request. It sends exactly `{'prompt': original_plain_text}` as Jevantic state, then calls the primary model when accepted. Rejection raises `GuardrailRejected` with `stage == 'input'` and the complete `evaluation`; its `evaluation.info` retains the response metadata. The protected model request does not run. New plain-text prompts with explicit history are supported. `None` and multimodal prompts are rejected before an evaluator request.
 
-`OutputGuardrail[DepsT](evaluator, question, *, accept=...)` uses the same typed policy, borrowed `Jevaluator`, event, serialization, and durable-execution rules as `InputGuardrail`. It accepts only a `Question[NoulAnswer]` and a final plain-text agent output.
+Both guardrails return `None` from `get_serialization_name()`, so they are excluded from serializable agent specifications. An active durable-execution capability is rejected before evaluation because Jevantic evaluations are not checkpointed. Guardrails reject `defer_loading=True`: their checks must be active when the run begins.
 
-The guardrail evaluates exactly `{'output': final_text}` in `after_run`, before `Agent.run()` returns. Its outermost ordering checks the result after ordinary output-processing and `after_run` transformations. When another capability also requests outermost ordering and changes results, place the guardrail first in the capabilities list so its check runs last. A rejected evaluation raises `GuardrailRejected` with `stage == 'output'`; its `evaluation.info` retains the response metadata. Structured final output is rejected before an evaluator request.
+Each evaluation emits an immediate, content-free `GuardrailEvaluated` event containing the stage, acceptance decision, probability, model metadata, request ID, and token counts. Guardrail usage remains separate from the agent result's usage. Register `Hooks.on.event(GuardrailEvaluated)` to receive it on Pydantic AI 2.38 or later. An event-stream handler can miss the event when a rejection ends the run, while the immediate hook has already received it.
+
+### Output
+
+`OutputGuardrail` accepts final plain-text output only. It evaluates exactly `{'output': final_text}` in `after_run`, before `Agent.run()` returns. Its outermost ordering checks the result after ordinary output-processing and `after_run` transformations. When another capability also requests outermost ordering and changes results, place the guardrail first in the capabilities list so its check runs last. A rejected evaluation raises `GuardrailRejected` with `stage == 'output'`; its `evaluation.info` retains the response metadata. Structured final output is rejected before an evaluator request.
 
 Streaming exposes text before acceptance. Inside `run_stream()`, raw deltas, partial and final `stream_output()` values, and `get_output()` can be observed before context exit raises `GuardrailRejected`. With `run_stream_events()`, rejection prevents the final `AgentRunResultEvent`, but earlier text events have already been emitted. Output functions also run before the check, so their side effects can already have occurred.
 

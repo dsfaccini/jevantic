@@ -11,7 +11,6 @@ from jevantic import (
     Jevaluator,
     JsonContent,
     NoulAnswer,
-    Option,
     Question,
     ScoreAnswer,
 )
@@ -46,7 +45,7 @@ async def typed_workflows(evaluator: Jevaluator, candidates: list[Candidate]) ->
     route = batch.add('route', Question.choice(routes))
     team = batch.add('team', Question.choice(teams))
     score = batch.add('score', Question.score(['low', 'high']))
-    candidate = batch.add('candidate', Question.select(Option(item.identifier, item) for item in candidates))
+    candidate = batch.add('candidate', Question.select(candidates))
     assert_type(risk, Handle[NoulAnswer])
     result = await batch.run()
     assert_type(result.answer(risk), NoulAnswer)
@@ -56,3 +55,23 @@ async def typed_workflows(evaluator: Jevaluator, candidates: list[Candidate]) ->
     assert_type(result.answer(team).selected, Team)
     assert_type(result.answer(score), ScoreAnswer)
     assert_type(result.answer(candidate).selected, Candidate)
+
+    single_risk = await evaluator.noul('state', 'Could this expose a secret?')
+    assert_type(single_risk, Jevaluation[NoulAnswer])
+    single_team = await evaluator.choice('state', Team)
+    assert_type(single_team, Jevaluation[ChoiceAnswer[Team]])
+    typed_routes: list[Route] = ['allow', 'block']
+    single_route = await evaluator.choice('state', typed_routes)
+    assert_type(single_route.value.selected, Route)
+    assert_type(Question.choice(Team), Question[ChoiceAnswer[Team]])
+    assert_type(Question.choice(typed_routes), Question[ChoiceAnswer[Route]])
+    single_score = await evaluator.score('state', ['low', 'high'])
+    assert_type(single_score, Jevaluation[ScoreAnswer])
+    single_candidate = await evaluator.select('state', candidates)
+    assert_type(single_candidate, Jevaluation[ChoiceAnswer[Candidate]])
+    projected = await evaluator.select(
+        'state', candidates, key=lambda item: item.identifier, describe=lambda item: item.identifier
+    )
+    assert_type(projected.value.selected, Candidate)
+    structured_state = await evaluator.noul(Candidate('example'), 'Ready?')
+    assert_type(structured_state, Jevaluation[NoulAnswer])

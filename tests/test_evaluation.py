@@ -16,7 +16,6 @@ from jevantic import (
     Jevaluator,
     JsonContent,
     NoulAnswer,
-    Option,
     Question,
     QuestionError,
     ResponseValidationError,
@@ -68,7 +67,8 @@ async def test_mixed_batch_preserves_types_values_and_request_shape(backend: Bac
     risk = batch.add('risk', Question.noul('Could this expose a secret?', true='Yes', false='No'))
     team = batch.add('team', Question.choice(teams, instructions='Which team should handle this?'))
     candidate = batch.add(
-        'candidate', Question.select(Option(item.identifier, item, item.identifier) for item in candidates)
+        'candidate',
+        Question.select(candidates, key=lambda item: item.identifier, describe=lambda item: item.identifier),
     )
     relevance = batch.add(
         'relevance', Question.score(['unrelated', 'partly related', 'directly related'], instructions='Rate relevance')

@@ -1,6 +1,6 @@
 [project]
 name = "jevantic"
-version = "0.1.0a0"
+version = "0.1.0a1"
 description = "Typed probabilistic decisions with Jev"
 requires-python = ">=3.12"
 dependencies = [

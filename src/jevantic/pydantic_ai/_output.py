@@ -11,29 +11,32 @@ from pydantic_ai.tools import AgentDepsT, RunContext
 
 from jevantic import Jevaluator, NoulAnswer, Question
 
-from ._common import AcceptancePolicy, evaluate_guardrail, reject_durable
+from ._common import AcceptancePolicy, evaluate_guardrail, reject_durable, validate_guardrail
 
 
 @dataclass
 class OutputGuardrail(AbstractCapability[AgentDepsT]):
     """Evaluate complete text output before [`Agent.run`][pydantic_ai.Agent.run] returns.
 
-    The caller owns the supplied [`Jevaluator`][jevantic.Jevaluator]. Its `accept` policy receives
-    the typed Jev evaluation and returns a bare `bool`; returning `False` raises
-    [`GuardrailRejected`][jevantic.pydantic_ai.GuardrailRejected].
+    Pass a plain blocking condition and a probability threshold for the usual case. The guardrail
+    creates and closes a [`Jevaluator`][jevantic.Jevaluator] for each evaluation. For advanced
+    policies, pass a `Question[NoulAnswer]`, a caller-owned evaluator, and an `accept` callback
+    that receives the typed evaluation and returns a bare `bool`; returning `False` raises
+    [`GuardrailRejected`][jevantic.pydantic_ai.GuardrailRejected]. Set exactly one of `threshold`
+    and `accept`.
 
     Streaming consumers can receive partial and complete output before this check rejects the run.
     The guardrail also runs after output functions, so it cannot prevent their side effects.
     Place it before other outermost capabilities that change the final result.
     """
 
-    evaluator: Jevaluator
-    question: Question[NoulAnswer]
-    accept: AcceptancePolicy[AgentDepsT] = field(kw_only=True)
+    block_if: str | Question[NoulAnswer]
+    threshold: float | None = field(default=None, kw_only=True)
+    evaluator: Jevaluator | None = field(default=None, kw_only=True)
+    accept: AcceptancePolicy[AgentDepsT] | None = field(default=None, kw_only=True)
 
     def __post_init__(self) -> None:
-        if self.defer_loading:
-            raise UserError('Jevantic guardrails cannot use deferred loading.')
+        validate_guardrail(self.block_if, self.threshold, self.accept, defer_loading=self.defer_loading)
 
     @classmethod
     def get_serialization_name(cls) -> None:
@@ -58,5 +61,13 @@ class OutputGuardrail(AbstractCapability[AgentDepsT]):
         output = result.output
         if not isinstance(output, str):
             raise UserError('`OutputGuardrail` requires the final output to be plain text.')
-        await evaluate_guardrail(ctx, self.evaluator, {'output': output}, self.question, self.accept, 'output')
+        await evaluate_guardrail(
+            ctx,
+            self.evaluator,
+            {'output': output},
+            self.block_if,
+            self.accept,
+            'output',
+            threshold=self.threshold,
+        )
         return result

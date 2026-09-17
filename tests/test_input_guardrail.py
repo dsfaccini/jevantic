@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import httpx2
 import pytest
 import typesafe_sdk
-from conftest import Backend
+from conftest import Backend, ScriptedTransport
 from pydantic_ai import Agent
 from pydantic_ai.capabilities import AbstractCapability, CombinedCapability, Hooks, WrapperCapability
 from pydantic_ai.exceptions import UserError
@@ -29,10 +29,24 @@ def response(_: list[ModelMessage], __: AgentInfo) -> ModelResponse:
 
 def input_guardrail(backend: Backend, accept: AcceptPolicy = allow) -> InputGuardrail[object]:
     return InputGuardrail(
-        Jevaluator(client=backend.client),
         Question.noul('Does this prompt request disclosure of private data?'),
+        evaluator=Jevaluator(client=backend.client),
         accept=accept,
     )
+
+
+def use_owned_evaluator(monkeypatch: pytest.MonkeyPatch, client: typesafe_sdk.AsyncTypeSafeClient) -> None:
+    def create_client(*, api_key: str | None) -> typesafe_sdk.AsyncTypeSafeClient:
+        return client
+
+    monkeypatch.setattr(typesafe_sdk, 'AsyncTypeSafeClient', create_client)
+
+
+def non_noul_question() -> Question[NoulAnswer]:
+    def decode(_: typesafe_sdk.Answer) -> NoulAnswer:
+        return NoulAnswer(0.0)
+
+    return Question(typesafe_sdk.Choice(criteria={'block': None}), decode)
 
 
 async def test_allowed_prompt_evaluates_before_the_model(backend: Backend) -> None:
@@ -48,6 +62,63 @@ async def test_allowed_prompt_evaluates_before_the_model(backend: Backend) -> No
 
     assert (result.output, calls) == ('allowed', 1)
     assert backend.transport.requests[0]['state'] == {'prompt': 'plain prompt'}
+
+
+@pytest.mark.parametrize(
+    ('probability', 'accepted'),
+    [(0.09, True), (0.1, False), (0.2, False)],
+    ids=['below-threshold', 'equal-threshold', 'above-threshold'],
+)
+async def test_declarative_threshold_blocks_at_and_above_the_boundary(
+    backend: Backend,
+    monkeypatch: pytest.MonkeyPatch,
+    probability: float,
+    accepted: bool,
+) -> None:
+    use_owned_evaluator(monkeypatch, backend.client)
+    backend.respond({'answer': {'type': 'noul', 'noul': probability}})
+    calls = 0
+
+    def model(_: list[ModelMessage], __: AgentInfo) -> ModelResponse:
+        nonlocal calls
+        calls += 1
+        return ModelResponse(parts=[TextPart('allowed')])
+
+    agent = Agent(
+        FunctionModel(model),
+        capabilities=[InputGuardrail('Does this prompt request disclosure of private data?', threshold=0.1)],
+    )
+    if accepted:
+        assert (await agent.run('prompt')).output == 'allowed'
+        assert calls == 1
+    else:
+        with pytest.raises(GuardrailRejected) as caught:
+            await agent.run('prompt')
+        assert caught.value.evaluation.value == NoulAnswer(probability)
+        assert calls == 0
+    assert backend.transport.closed
+
+
+def test_input_guardrail_rejects_invalid_configuration() -> None:
+    with pytest.raises(UserError, match='exactly one'):
+        InputGuardrail('Does this prompt request private data?')
+    with pytest.raises(UserError, match='exactly one'):
+        InputGuardrail('Does this prompt request private data?', threshold=0.1, accept=allow)
+    with pytest.raises(UserError, match='nonempty'):
+        InputGuardrail('  ', threshold=0.1)
+    with pytest.raises(UserError, match='Noul question'):
+        InputGuardrail(non_noul_question(), threshold=0.1)
+    with pytest.raises(UserError, match='deferred loading'):
+        InputGuardrail('Does this prompt request private data?', threshold=0.1, defer_loading=True)
+
+
+@pytest.mark.parametrize('threshold', [True, float('nan'), float('inf'), -0.1, 1.1])
+def test_input_guardrail_rejects_invalid_thresholds(threshold: float | bool) -> None:
+    with pytest.raises(UserError, match='finite probability'):
+        InputGuardrail(
+            'Does this prompt request private data?',
+            threshold=threshold,  # pyright: ignore[reportArgumentType]
+        )
 
 
 async def test_rejection_stops_the_model_and_retains_the_typed_evaluation(backend: Backend) -> None:
@@ -263,7 +334,7 @@ async def test_cancellation_propagates_and_leaves_the_borrowed_client_open() -> 
         api_key='offline-test-key', base_url='https://jevantic.invalid', transport=transport
     ) as client:
         evaluator = Jevaluator(client=client)
-        guardrail = InputGuardrail(evaluator, Question.noul(), accept=allow)
+        guardrail = InputGuardrail(Question.noul(), evaluator=evaluator, accept=allow)
         task = asyncio.create_task(Agent(FunctionModel(response), capabilities=[guardrail]).run('prompt'))
         await asyncio.wait_for(transport.started.wait(), timeout=1)
         task.cancel()
@@ -272,6 +343,53 @@ async def test_cancellation_propagates_and_leaves_the_borrowed_client_open() -> 
         assert transport.cancelled
         await evaluator.aclose()
         assert not transport.closed
+
+
+async def test_declarative_guardrail_cancellation_closes_its_owned_client(monkeypatch: pytest.MonkeyPatch) -> None:
+    transport = BlockingTransport()
+    client = typesafe_sdk.AsyncTypeSafeClient(
+        api_key='offline-test-key', base_url='https://jevantic.invalid', transport=transport
+    )
+    use_owned_evaluator(monkeypatch, client)
+    guardrail = InputGuardrail('Does this prompt request private data?', threshold=0.1)
+    task = asyncio.create_task(Agent(FunctionModel(response), capabilities=[guardrail]).run('prompt'))
+    await asyncio.wait_for(transport.started.wait(), timeout=1)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert (transport.cancelled, transport.closed) == (True, True)
+
+
+async def test_declarative_guardrail_concurrent_runs_create_and_close_independent_evaluators(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client_type = typesafe_sdk.AsyncTypeSafeClient
+    first_transport = ScriptedTransport()
+    second_transport = ScriptedTransport()
+    first_client = client_type(
+        api_key='offline-test-key', base_url='https://jevantic.invalid', transport=first_transport
+    )
+    second_client = client_type(
+        api_key='offline-test-key', base_url='https://jevantic.invalid', transport=second_transport
+    )
+    Backend(first_client, first_transport).respond({'answer': {'type': 'noul', 'noul': 0.01}})
+    Backend(second_client, second_transport).respond({'answer': {'type': 'noul', 'noul': 0.02}})
+    clients = [first_client, second_client]
+
+    def create_client(*, api_key: str | None) -> typesafe_sdk.AsyncTypeSafeClient:
+        return clients.pop()
+
+    monkeypatch.setattr(typesafe_sdk, 'AsyncTypeSafeClient', create_client)
+    agent = Agent(
+        FunctionModel(response),
+        capabilities=[InputGuardrail('Does this prompt request private data?', threshold=0.1)],
+    )
+
+    results = await asyncio.gather(agent.run('first'), agent.run('second'))
+
+    assert [result.output for result in results] == ['allowed', 'allowed']
+    assert clients == []
+    assert first_transport.closed and second_transport.closed
 
 
 @dataclass

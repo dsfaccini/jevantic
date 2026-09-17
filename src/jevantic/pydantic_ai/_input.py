@@ -12,25 +12,26 @@ from pydantic_ai.tools import AgentDepsT, RunContext
 
 from jevantic import Jevaluator, NoulAnswer, Question
 
-from ._common import AcceptancePolicy, evaluate_guardrail, reject_durable
+from ._common import AcceptancePolicy, evaluate_guardrail, reject_durable, validate_guardrail
 
 
 @dataclass
 class InputGuardrail(AbstractCapability[AgentDepsT]):
     """Evaluate the original text prompt before the first model request.
 
-    The caller owns the supplied [`Jevaluator`][jevantic.Jevaluator]. Its `accept` policy receives
-    the typed Jev evaluation and returns a bare `bool`; returning `False` raises
-    [`GuardrailRejected`][jevantic.pydantic_ai.GuardrailRejected] before the primary model runs.
+    Pass a blocking condition and probability `threshold` for the usual case. The guard rejects
+    probabilities greater than or equal to that threshold. Advanced callers may pass a typed
+    `Question` and an `accept` policy; a supplied [`Jevaluator`][jevantic.Jevaluator] remains
+    caller-owned, while the default evaluator is scoped to each evaluation.
     """
 
-    evaluator: Jevaluator
-    question: Question[NoulAnswer]
-    accept: AcceptancePolicy[AgentDepsT] = field(kw_only=True)
+    block_if: str | Question[NoulAnswer]
+    threshold: float | None = field(default=None, kw_only=True)
+    evaluator: Jevaluator | None = field(default=None, kw_only=True)
+    accept: AcceptancePolicy[AgentDepsT] | None = field(default=None, kw_only=True)
 
     def __post_init__(self) -> None:
-        if self.defer_loading:
-            raise UserError('Jevantic guardrails cannot use deferred loading.')
+        validate_guardrail(self.block_if, self.threshold, self.accept, defer_loading=self.defer_loading)
 
     @classmethod
     def get_serialization_name(cls) -> None:
@@ -55,5 +56,13 @@ class InputGuardrail(AbstractCapability[AgentDepsT]):
         prompt = ctx.prompt
         if not isinstance(prompt, str):
             raise UserError('`InputGuardrail` requires the original user prompt to be plain text.')
-        await evaluate_guardrail(ctx, self.evaluator, {'prompt': prompt}, self.question, self.accept, 'input')
+        await evaluate_guardrail(
+            ctx,
+            self.evaluator,
+            {'prompt': prompt},
+            self.block_if,
+            self.accept,
+            'input',
+            threshold=self.threshold,
+        )
         return await handler(request_context)

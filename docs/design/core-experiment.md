@@ -1,6 +1,6 @@
 # Typed core design
 
-Updated: 2026-09-17 UTC. First developing alpha, following an independently reviewed interface experiment.
+Updated: 2026-09-17 UTC. The next alpha extends the published core with [direct calls and inferred data](api-ergonomics.md).
 
 The [standalone package](../../README.md) uses typed questions as the shared foundation for single evaluations, mixed batches, and ordinary Python assessment functions. The [verification record](../verification.md) gives reproducible evidence and limits.
 
@@ -16,7 +16,7 @@ risk_answer = result.answer(risk)        # NoulAnswer
 quality_answer = result.answer(quality)  # ScoreAnswer
 ```
 
-`Jevaluator.evaluate(state, question)` handles one question. `Question.choice()` preserves typed string labels, and `Question.select()` recovers original local objects from returned labels. Their probabilities and confidence remain available. [Complete assessment functions](../../examples/assessments.py) demonstrate a command-risk question and two rubric scores in one request.
+`Jevaluator.noul`, `choice`, `select`, and `score` handle one-shot decisions while retaining the full evaluation. `evaluate(state, question)` executes a reusable question. `Question.choice()` preserves typed string labels from mappings, iterables, or string-enum classes; `Question.select()` infers structured fields and recovers original local objects from returned labels. Their probabilities and confidence remain available. [Complete assessment functions](../../examples/assessments.py) demonstrate a command-risk question and two rubric scores in one request.
 
 `Jevaluator.evaluate_many(states, question, concurrency=...)` repeats a question over independent inputs using bounded workers. It consumes input lazily and returns one typed evaluation per input in the original order. A failure cancels unfinished work and raises an exception group with the original errors; evaluation failures carry their input index. The [ranking example](../../examples/ranking.py) composes this with a stable sort and preserves each original document object.
 

@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import inspect
+import math
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Literal, Protocol, runtime_checkable
 
+import typesafe_sdk
 from pydantic import BaseModel
 from pydantic_ai import CapabilityEvent
 from pydantic_ai.capabilities import AbstractCapability, CombinedCapability, WrapperCapability
@@ -56,21 +58,54 @@ class GuardrailRejected(Exception):
         super().__init__('Jevantic guardrail rejected the evaluation.')
 
 
+def validate_guardrail[DepsT](
+    block_if: str | Question[NoulAnswer],
+    threshold: float | None,
+    accept: AcceptancePolicy[DepsT] | None,
+    *,
+    defer_loading: bool,
+) -> None:
+    """Validate a blocking condition and one explicit decision policy before I/O."""
+    if defer_loading:
+        raise UserError('Jevantic guardrails cannot use deferred loading.')
+    if isinstance(block_if, str):
+        if not block_if.strip():
+            raise UserError('A guardrail needs a nonempty blocking condition.')
+    elif not isinstance(block_if.to_request(), typesafe_sdk.Noul):
+        raise UserError('A guardrail requires a Noul question.')
+    if (threshold is None) == (accept is None):
+        raise UserError('Set exactly one of threshold or accept for the guardrail.')
+    if threshold is not None and (
+        isinstance(threshold, bool) or not math.isfinite(threshold) or not 0 <= threshold <= 1
+    ):
+        raise UserError('The guardrail threshold must be a finite probability between zero and one.')
+
+
 async def evaluate_guardrail[DepsT](
     ctx: RunContext[DepsT],
-    evaluator: Jevaluator,
+    evaluator: Jevaluator | None,
     state: JsonContent | BaseModel,
-    question: Question[NoulAnswer],
-    accept: AcceptancePolicy[DepsT],
+    block_if: str | Question[NoulAnswer],
+    accept: AcceptancePolicy[DepsT] | None,
     stage: GuardrailStage,
+    threshold: float | None = None,
 ) -> None:
     """Apply one guardrail policy and report the same evidence on every boundary."""
-    evaluation = await evaluator.evaluate(state, question)
-    accepted = accept(ctx, evaluation)
-    if inspect.isawaitable(accepted):
-        accepted = await accepted
-    if type(accepted) is not bool:
-        raise TypeError('The guardrail acceptance policy must return a bool.')
+    question = Question.noul(block_if) if isinstance(block_if, str) else block_if
+    if evaluator is None:
+        async with Jevaluator() as owned:
+            evaluation = await owned.evaluate(state, question)
+    else:
+        evaluation = await evaluator.evaluate(state, question)
+    if accept is None:
+        assert threshold is not None
+        accepted = evaluation.value.probability < threshold
+    else:
+        accepted = accept(ctx, evaluation)
+        if inspect.isawaitable(accepted):
+            accepted = await accepted
+        if type(accepted) is not bool:
+            raise TypeError('The guardrail acceptance policy must return a bool.')
 
     await ctx.emit(
         GuardrailEvaluated(

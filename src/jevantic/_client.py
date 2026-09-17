@@ -1,6 +1,6 @@
 """Async evaluation, explicit batches, and SDK client ownership."""
 
-from collections.abc import Awaitable, Callable, Iterable, Mapping
+from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType, TracebackType
 from typing import Generic, Self, TypeVar
@@ -11,8 +11,8 @@ import typesafe_sdk
 from pydantic import BaseModel
 
 from ._errors import QuestionError, ResponseValidationError
-from ._json import JsonContent, content_snapshot
-from ._questions import Question
+from ._json import Content, JsonContent, content_snapshot
+from ._questions import ChoiceAnswer, NoulAnswer, Question, ScoreAnswer
 
 AnswerT = TypeVar('AnswerT')
 AnswerT_co = TypeVar('AnswerT_co', covariant=True)
@@ -103,20 +103,65 @@ class Jevaluator:
         self._closed = False
         self._entered = False
 
-    def batch(self, state: JsonContent | BaseModel) -> 'Batch':
+    def batch(self, state: Content) -> 'Batch':
         """Prepare a shared-state batch without making a provider request."""
         return Batch(content_snapshot(state), self._request)
 
-    async def evaluate(self, state: JsonContent | BaseModel, question: Question[AnswerT]) -> Jevaluation[AnswerT]:
+    async def evaluate(self, state: Content, question: Question[AnswerT]) -> Jevaluation[AnswerT]:
         """Evaluate one question, preserving its exact answer type and request metadata."""
         batch = self.batch(state)
         handle = batch.add('answer', question)
         result = await batch.run()
         return Jevaluation(result.answer(handle), result.info)
 
+    async def noul(
+        self,
+        state: Content,
+        instructions: Content | None = None,
+        *,
+        true: Content | None = None,
+        false: Content | None = None,
+    ) -> Jevaluation[NoulAnswer]:
+        """Evaluate a yes-outcome probability and retain its request metadata."""
+        return await self.evaluate(state, Question.noul(instructions, true=true, false=false))
+
+    async def choice[LabelT: str](
+        self,
+        state: Content,
+        criteria: Mapping[LabelT, Content | None] | Iterable[LabelT],
+        *,
+        instructions: Content | None = None,
+    ) -> Jevaluation[ChoiceAnswer[LabelT]]:
+        """Choose typed labels with their probabilities, confidence, and metadata."""
+        return await self.evaluate(state, Question.choice(criteria, instructions=instructions))
+
+    async def select[ValueT](
+        self,
+        state: Content,
+        options: Iterable[ValueT],
+        *,
+        key: Callable[[ValueT], str] | None = None,
+        describe: Callable[[ValueT], Content | None] | None = None,
+        instructions: Content | None = None,
+    ) -> Jevaluation[ChoiceAnswer[ValueT]]:
+        """Select an original object, inferring descriptions from structured data."""
+        return await self.evaluate(
+            state, Question.select(options, key=key, describe=describe, instructions=instructions)
+        )
+
+    async def score(
+        self,
+        state: Content,
+        criteria: Sequence[Content],
+        *,
+        instructions: Content | None = None,
+    ) -> Jevaluation[ScoreAnswer]:
+        """Evaluate a rubric, preserving the fractional score and its uncertainty."""
+        return await self.evaluate(state, Question.score(criteria, instructions=instructions))
+
     async def evaluate_many(
         self,
-        states: Iterable[JsonContent | BaseModel],
+        states: Iterable[Content],
         question: Question[AnswerT],
         *,
         concurrency: int,

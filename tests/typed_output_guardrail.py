@@ -12,10 +12,16 @@ async def accepts_text(ctx: RunContext[str], evaluation: Jevaluation[NoulAnswer]
     return evaluation.value.probability < 0.5
 
 
-def build_guardrail(evaluator: Jevaluator) -> OutputGuardrail[str]:
+def build_threshold_guardrail() -> OutputGuardrail[str]:
+    guardrail: OutputGuardrail[str] = OutputGuardrail('Could this response disclose private data?', threshold=0.1)
+    assert_type(guardrail, OutputGuardrail[str])
+    return guardrail
+
+
+def build_advanced_guardrail(evaluator: Jevaluator) -> OutputGuardrail[str]:
     guardrail = OutputGuardrail(
-        evaluator,
         Question.noul('Could this response disclose private data?'),
+        evaluator=evaluator,
         accept=accepts_text,
     )
     assert_type(guardrail, OutputGuardrail[str])

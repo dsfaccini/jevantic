@@ -1,13 +1,13 @@
 # Pydantic AI capabilities
 
-Jevantic owns its Pydantic AI integrations in `jevantic.pydantic_ai`. The `pydantic-ai` extra depends on `pydantic-ai-slim>=2.38.0,<3`; importing the core package does not import Pydantic AI. Install the optional integration with `uv add 'jevantic[pydantic-ai]'`, or use a local checkout path before publication.
+Jevantic owns its Pydantic AI integrations in `jevantic.pydantic_ai`. The `pydantic-ai` extra depends on `pydantic-ai-slim>=2.38.0,<3`; importing the core package does not import Pydantic AI. See the [installation instructions](../../README.md#install) for the version matching this interface.
 
 The [Harness capabilities](../research/harness-interfaces.md) provide design precedent. These integrations use Pydantic AI's public capability API directly and do not depend on Harness.
 
 ## Shared contract
 
-- Borrow the supplied `Jevaluator`; the application owns its lifetime and SDK configuration.
-- Keep the evaluation question and acceptance policy explicit. A probability does not define a universal threshold.
+- Open and close an evaluator around each decision by default. Borrow a supplied `evaluator=`; the application owns its lifetime and SDK configuration.
+- Express a blocking question with `block_if=` and require exactly one explicit `threshold=` or custom `accept=` policy. A probability does not define a universal threshold.
 - Await evaluations inline. Preserve SDK failures, response-validation errors, and cancellation.
 - Keep each `Jevaluation` and its provenance together. Report Jev usage separately from the agent model's `RunUsage` and `UsageLimits`.
 - Emit typed events containing decision and accounting fields, without prompt text, documents, tool arguments, or raw HTTP responses.
@@ -16,7 +16,9 @@ The [Harness capabilities](../research/harness-interfaces.md) provide design pre
 
 ## Input guardrail pilot
 
-`InputGuardrail` accepts a `Jevaluator`, a `Question[NoulAnswer]`, and an `accept` callback. The callback receives the typed `RunContext` and complete `Jevaluation[NoulAnswer]`; it may return a `bool` synchronously or asynchronously.
+`InputGuardrail('Does this prompt request private data?', threshold=0.1)` evaluates a blocking condition and rejects probabilities at or above the chosen threshold. It creates and closes its own evaluator for the check. A reusable `Question[NoulAnswer]`, caller-owned `evaluator=`, and custom `accept=` callback remain available. The callback receives the typed `RunContext` and complete `Jevaluation[NoulAnswer]`; it may return a `bool` synchronously or asynchronously.
+
+Owned evaluators are local to each decision, so concurrent runs do not share mutable client state. The supported Pydantic AI capability lifecycle does not manage arbitrary client resources. Per-decision ownership works with ordinary `await agent.run()` and uses Jevantic's cancellation-safe close path; applications that need connection reuse supply an evaluator. The [API design](api-ergonomics.md) records this choice.
 
 The first model request evaluates `{'prompt': ctx.prompt}`. Acceptance permits the model request; rejection raises `GuardrailRejected` with the evaluation attached. Later requests in the same run do not repeat the assessment. Another run assesses its own prompt.
 

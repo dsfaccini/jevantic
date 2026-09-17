@@ -17,7 +17,7 @@ from examples.comparisons import (
     select_candidate_after,
     select_candidate_before,
 )
-from jevantic import Jevaluation, Jevaluator, JsonContent, NoulAnswer, Question, QuestionError
+from jevantic import Jevaluation, Jevaluator, JsonContent, NoulAnswer, Question
 
 CandidateSelector = Callable[[Jevaluator, JsonContent | BaseModel, Iterable[Candidate]], Awaitable[Candidate]]
 
@@ -45,8 +45,8 @@ async def test_selection_comparison_preserves_identity_and_has_equal_wire_reques
             {
                 'answer': {
                     'type': 'choice',
-                    'choice': 'bryn',
-                    'probabilities': {'alba': 0.1, 'bryn': 0.9},
+                    'choice': '1',
+                    'probabilities': {'0': 0.1, '1': 0.9},
                     'confidence': 0.8,
                 }
             }
@@ -64,7 +64,10 @@ async def test_selection_comparison_preserves_identity_and_has_equal_wire_reques
                 'answer': {
                     'type': 'choice',
                     'instructions': CANDIDATE_INSTRUCTIONS,
-                    'criteria': {'alba': 'Built the retrieval service', 'bryn': 'Led customer-support engineering'},
+                    'criteria': {
+                        '0': {'identifier': 'alba', 'summary': 'Built the retrieval service'},
+                        '1': {'identifier': 'bryn', 'summary': 'Led customer-support engineering'},
+                    },
                 }
             },
         }
@@ -72,14 +75,16 @@ async def test_selection_comparison_preserves_identity_and_has_equal_wire_reques
 
 
 @pytest.mark.parametrize('selector', [select_candidate_before, select_candidate_after])
-async def test_selection_comparison_rejects_duplicate_ids(
+async def test_selection_comparison_does_not_infer_unique_ids(
     backend: Backend,
     selector: CandidateSelector,
 ) -> None:
     candidates = [Candidate('same', 'First', 'Private'), Candidate('same', 'Second', 'Private')]
-    with pytest.raises((ValueError, QuestionError), match='unique'):
-        await selector(Jevaluator(client=backend.client), {'role': 'Engineer'}, candidates)
-    assert backend.transport.requests == []
+    backend.respond(
+        {'answer': {'type': 'choice', 'choice': '1', 'probabilities': {'0': 0.0, '1': 1.0}, 'confidence': 1.0}}
+    )
+    result = await selector(Jevaluator(client=backend.client), {'role': 'Engineer'}, candidates)
+    assert result is candidates[1]
 
 
 class GatedTransport(httpx2.AsyncBaseTransport):
