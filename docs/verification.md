@@ -2,26 +2,29 @@
 
 Observed: 2026-09-17 UTC. Results below describe the checked source and recorded service responses, not guarantees about every future model response or application.
 
+Checked implementation: [`03125f427f605082f900b628dc990a936f8364b6`](https://github.com/dsfaccini/jevantic/commit/03125f427f605082f900b628dc990a936f8364b6). The following documentation-only update records its verification; it does not change the tested implementation.
+
 ## Current package
 
-The `jevantic` alpha builds as a source distribution and wheel, version `0.1.0a0`, with `py.typed`. Its core stays independently installable; the optional `pydantic-ai` extra supplies `InputGuardrail` and `OutputGuardrail`. The renamed public types are `Jevaluator` and `Jevaluation`. Publication status is available on [PyPI](https://pypi.org/project/jevantic/).
+The prepared `jevantic` alpha builds as a source distribution and wheel, version `0.1.0a1`, with `py.typed`. This version is not yet published; `0.1.0a0` remains the published [PyPI release](https://pypi.org/project/jevantic/). Its core stays independently installable; the optional `pydantic-ai` extra supplies `InputGuardrail` and `OutputGuardrail`. The current [installation instructions](../README.md#install) use the source repository for the simplified API.
 
 | Check | Result and environment |
 | --- | --- |
 | Behavioral suite | Pass on CPython 3.13.3 with Pydantic 2.13.5, typesafe-sdk 0.6.0, httpx2 2.13.0 |
 | Branch coverage | Pass: 100%, no missing source lines or branches |
-| Strict static checks | Pass with Pyright 1.1.414 across source, tests, public type assertions, examples, and check scripts |
+| Strict static checks | Pass with Pyright 1.1.414 across source, tests, public type assertions, examples, check scripts, and the comparison renderer |
 | Invalid caller checks | Pass: every marked invalid expression is rejected with its expected diagnostic category |
 | Style | Ruff 0.16.8 lint and format checks pass |
 | Distribution build | Source distribution and wheel build successfully |
 | Installed wheel | The complete suite and 100% branch-coverage check pass from an isolated wheel installation on CPython 3.13.3 with Pydantic 2.13.5 and Pydantic AI 2.44.0 |
-| Base installation | Isolated wheel import passes with no Pydantic AI package installed; both renamed public types and a `Noul` question are available |
-| Capability version floor | Public agent tests for both guardrails and spec construction pass with Pydantic AI 2.38.0 and its matching `pydantic-graph` |
-| Guardrail boundaries | Pass for accepted/rejected decisions, separate usage/events, cancellation, wrapped durable contexts, deferred-loading rejection, and output transformations before completion |
+| Base installation and Pydantic floor | The complete core suite passes from an isolated wheel with Pydantic 2.10.0 and no Pydantic AI package installed; structured serialization and field exclusions work at the declared floor |
+| Capability version floor | Public agent tests for both guardrails, spec construction, and complete comparison examples pass with Pydantic AI 2.38.0 and its matching `pydantic-graph` |
+| Direct decisions and inferred data | Pass for full-result convenience methods, enum/literal choices, dataclass/Pydantic inputs and exclusions, original selected objects, construction-time snapshots, explicit projections, and nonfinite values rejected before I/O |
+| Guardrail boundaries | Pass for declarative thresholds and custom policies, owned and borrowed evaluators, accepted/rejected decisions, separate usage/events, cancellation, wrapped durable contexts, deferred-loading rejection, and output transformations before completion |
 | Streaming contract | Tests verify that partial/final streamed text can precede an output rejection, while a rejected event stream omits `AgentRunResultEvent`; typed event listeners receive completion decisions |
 | Cancellation during close | Pass for repeated direct asyncio task cancellation and AnyIO scope cancellation on asyncio and Trio; owned closure completes, cancellation remains effective, original close failures propagate |
 | Independent-input fan-out | Pass on asyncio and Trio: ordered typed results, bounded in-flight work, lazy input, SDK retry reuse, iterator and provider errors, sibling cancellation, and caller-owned client reuse |
-| Marketing comparisons | Executed examples compare object identity, equivalent wire questions, bounded concurrency, input ordering, lazy iteration, and failure cleanup. Both rendered clips are 1920×1080, 30 fps, and exactly four seconds |
+| Marketing comparisons | Executed examples compare object identity, equivalent wire questions, bounded concurrency, input ordering, lazy iteration, failure cleanup, and equivalent guardrail decisions/events. All four rendered clips are 1920×1080, 30 fps, and exactly four seconds; before/after posters were visually checked |
 
 The installed-package check imported Jevantic from the isolated environment's `site-packages`, without a source-path override. Local development and checks now use Python 3.13 only. Earlier exploratory runs on other interpreters are not evidence for the current package's compatibility; the configured CI matrix owns that check.
 
@@ -43,7 +46,7 @@ From the repository root:
 uv sync --locked --extra pydantic-ai --python 3.13
 uv run --extra pydantic-ai coverage run -m pytest tests -q
 uv run --extra pydantic-ai coverage report --show-missing
-uv run --extra pydantic-ai pyright src/jevantic tests examples checks
+uv run --extra pydantic-ai pyright src/jevantic tests examples checks assets/marketing/build.py
 uv run --extra pydantic-ai python checks/typecheck_negative.py
 uv run --extra pydantic-ai ruff check src tests examples checks typecheck assets/marketing
 uv run --extra pydantic-ai ruff format --check src tests examples checks typecheck assets/marketing
