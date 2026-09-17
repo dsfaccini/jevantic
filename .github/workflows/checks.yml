@@ -17,13 +17,22 @@ jobs:
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
           python-version: ${{ matrix.python }}
-      - run: uv sync --locked --python ${{ matrix.python }}
-      - run: uv run --python ${{ matrix.python }} coverage run -m pytest tests/test_evaluation.py tests/test_questions.py tests/test_lifecycle.py tests/test_examples.py tests/test_fanout.py -q
-      - run: uv run --python ${{ matrix.python }} coverage report --show-missing
+      - run: uv sync --locked --extra pydantic-ai --python ${{ matrix.python }}
+      - run: uv run --extra pydantic-ai --python ${{ matrix.python }} coverage run -m pytest tests -q
+      - run: uv run --extra pydantic-ai --python ${{ matrix.python }} coverage report --show-missing
       - if: matrix.python == '3.13'
         run: |
-          uv run ruff check src tests examples checks typecheck
-          uv run ruff format --check src tests examples checks typecheck
-          uv run pyright src/jevantic tests examples checks
-          uv run python checks/typecheck_negative.py
-          uv build
+          uv run --extra pydantic-ai ruff check src tests examples checks typecheck assets/marketing
+          uv run --extra pydantic-ai ruff format --check src tests examples checks typecheck assets/marketing
+          uv run --extra pydantic-ai pyright src/jevantic tests examples checks
+          uv run --extra pydantic-ai python checks/typecheck_negative.py
+          uv build --no-sources
+      - if: matrix.python == '3.13'
+        name: Minimum Pydantic AI version
+        run: uv run --extra pydantic-ai --with 'pydantic-ai-slim==2.38.0' --with 'pydantic-graph==2.38.0' python -m pytest tests/test_capability_specs.py tests/test_input_guardrail.py tests/test_output_guardrail.py -q
+      - if: matrix.python == '3.13'
+        name: Base wheel without the optional integration
+        run: |
+          uv venv /tmp/jevantic-base --python 3.13
+          uv pip install --python /tmp/jevantic-base/bin/python dist/*.whl
+          /tmp/jevantic-base/bin/python -I -c "import importlib.util; import jevantic; assert importlib.util.find_spec('pydantic_ai') is None; assert jevantic.Question.noul('Example').to_request()"

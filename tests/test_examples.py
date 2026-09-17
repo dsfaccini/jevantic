@@ -2,13 +2,13 @@ from conftest import Backend
 
 from examples.assessments import CommandContext, Draft, assess_command, assess_draft
 from examples.ranking import Document, rank_documents
-from jevantic import Evaluator
+from jevantic import Jevaluator
 
 
 async def test_command_assessment(backend: Backend) -> None:
     context = CommandContext(command='pwd', working_directory='/workspace', user_intent='Find the current directory')
     backend.respond({'answer': {'type': 'noul', 'noul': 0.01}})
-    async with Evaluator(client=backend.client) as evaluator:
+    async with Jevaluator(client=backend.client) as evaluator:
         result = await assess_command(evaluator, context)
     assert result.value.probability == 0.01
     assert backend.transport.requests[0]['state'] == context.model_dump()
@@ -41,7 +41,7 @@ async def test_two_rubrics_share_one_request(backend: Backend) -> None:
             },
         }
     )
-    async with Evaluator(client=backend.client) as evaluator:
+    async with Jevaluator(client=backend.client) as evaluator:
         result = await assess_draft(evaluator, Draft(brief='Explain Jev', text='Jev estimates structured decisions.'))
     assert (result.relevance.score, result.clarity.score) == (1.5, 1.9)
     assert len(backend.transport.requests) == 1
@@ -55,7 +55,7 @@ async def test_rank_documents_preserves_identity_and_stable_ties(backend: Backen
     ]
     for probability in (0.1, 0.9, 0.9):
         backend.respond({'answer': {'type': 'noul', 'noul': probability}})
-    result = await rank_documents(Evaluator(client=backend.client), 'query', documents, concurrency=2)
+    result = await rank_documents(Jevaluator(client=backend.client), 'query', documents, concurrency=2)
     assert [item.document.identifier for item in result] == ['second', 'third', 'first']
     assert [item.relevance.value.probability for item in result] == [0.9, 0.9, 0.1]
     assert result[0].document is documents[1]

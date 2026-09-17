@@ -1,86 +1,239 @@
 # Jevantic
 
-A Python library for typed, probabilistic decisions with Jev. Compose questions, evaluate shared state, and retain the types of answers and selected application objects.
+Jevantic gives Python programs typed, probabilistic decisions from Jev. Define a question, evaluate application state, and receive an answer whose type matches the question: a probability, a typed label, an original local object, or a scored rubric.
 
-This is the first developing alpha. The public API can change as complete workflows expose better interfaces. Jevantic is standalone; Pydantic AI Harness is an intended downstream consumer.
+Jevantic is an experimental alpha. Its public API may change as complete workflows reveal better interfaces. It is standalone, with optional Pydantic AI capabilities in its `pydantic-ai` extra.
 
-## Install from the checkout
+## Install
+
+The first alpha is being prepared for PyPI. Once it is available, add the core package or the optional Pydantic AI capability extra:
 
 ```sh
-uv add /path/to/jevantic
+uv add jevantic
+uv add 'jevantic[pydantic-ai]'
 ```
 
-The package has not been published to PyPI. Local development uses Python 3.13; Python 3.12 and 3.14 checks are configured in CI.
+## Start with one decision
 
-## Use
+The examples below assume `evaluator` is already open. In application code, `async with Jevaluator() as evaluator:` creates a TypeSafe SDK client from its normal environment configuration, or pass `api_key=` explicitly.
 
 ```python
-from jevantic import Evaluator, Question
+from jevantic import Jevaluator, Question
 
-async def assess(text: str) -> float:
-    async with Evaluator() as evaluator:
-        result = await evaluator.evaluate(text, Question.noul('Does the text contain personal information?'))
-    return result.value.probability
+question = Question.noul(
+    'Could this command disclose credentials outside the workspace?',
+    true='The command could disclose sensitive data.',
+    false='The command stays within its intended workspace.',
+)
+
+assessment = await evaluator.evaluate({'command': 'printenv'}, question)
+risk = assessment.value.probability
+# 0.82  # illustrative provider result; float
 ```
 
-`Evaluator()` creates an asynchronous TypeSafe SDK client using the SDK's environment configuration. Supply `api_key` explicitly or pass a configured `typesafe_sdk.AsyncTypeSafeClient` through `client`. An injected client remains the caller's responsibility to close. Configure timeouts, retries, base URLs, and transports on that SDK client.
+`Question.noul()` produces a `NoulAnswer` with the probability of its yes outcome. Probabilities in this README are illustrative values, not measured model output or policy thresholds.
 
-See [complete assessment functions](examples/assessments.py) for a command risk estimate and two rubric scores sharing one request. The application decides what action follows an answer. The examples are exercised against local HTTP responses in [their tests](tests/test_examples.py).
+## Keep the answer type you chose
 
-## Composition
+Use `Question.choice()` when the answer is one of typed string labels. Annotating the labels retains a `Literal` or `StrEnum` type after evaluation.
 
-`Question.noul()` returns a probability. `Question.choice()` preserves typed string labels, including literals and string enums. `Question.select()` associates labels with arbitrary local objects and returns the original selected object; only labels and descriptions are sent to Jev. `Question.score()` retains a fractional rubric score, its distribution, the rubric legend, and provider confidence.
+```python
+from typing import Literal
 
-For several questions over the same state, use `batch = evaluator.batch(state)`, retain the typed handles returned by `batch.add(name, question)`, then obtain each value with `(await batch.run()).answer(handle)`. Every run validates all answers. The first run freezes registration; later runs explicitly evaluate the same batch again, producing independent results. SDK retry policy can add HTTP attempts within a run.
+from jevantic import JsonContent, Question
 
-Plain Python functions can build questions from application dependencies. `Question.to_request()` and `Question.decode()` also support callers that manage SDK execution themselves.
+Route = Literal['send', 'review']
+routes: dict[Route, JsonContent | None] = {
+    'send': 'The message is ready for its intended audience.',
+    'review': 'A person should review the message before it is sent.',
+}
 
-For the same question over independent inputs, use `await evaluator.evaluate_many(states, question, concurrency=4)`. The concurrency value is explicit: choose it for the application's traffic and provider limits. Inputs are consumed lazily by a bounded worker pool; results retain input order and each request's metadata. A shared-state batch and a collection of independent requests remain different operations.
+route = (await evaluator.evaluate('Draft: deploy production now', Question.choice(routes))).value
+route.selected
+# 'review'  # illustrative provider result; Route
+route.distribution[0].value
+# 'send'  # Route
+```
 
-The [document-ranking example](examples/ranking.py) evaluates a retrieved shortlist, returns the original document objects, and preserves order in tied scores. Retrieval, relevance wording, thresholds, and any final selection remain application choices.
+Use `Question.select()` when a label represents an object your program already owns. Jev receives each key and description; the selected answer returns the original object.
 
-If a collection fails, unfinished evaluations are cancelled and an `ExceptionGroup` retains the original errors. Evaluation errors carry a zero-based input index in an exception note, without the input content. The call returns no partial list. Some requests may already have completed or reached the provider; the collector does not repeat successful work automatically. SDK retries still apply separately to each request.
+```python
+from dataclasses import dataclass
 
-## Data and failures
+from jevantic import Option, Question
 
-State and question content accept text, JSON objects, and JSON arrays. State also accepts a Pydantic model and follows its JSON serialization configuration. State is captured when a batch is created; question content is captured at construction. Local choice objects retain their identity and remain owned by the application.
 
-Answers must match the requested names, kinds, options, and rubric. Probabilities and confidence must be finite and within zero and one. A selected Choice must have maximal probability, allowing ties within `1e-6`; a Score must match the probability-weighted rubric within `1e-6` per level. Distributions use an absolute sum tolerance of `1e-6`. These experimental tolerances preserve the reported values without normalization. Provider confidence and the selected option's probability are distinct values.
+@dataclass(frozen=True)
+class Candidate:
+    identifier: str
+    summary: str
 
-`QuestionError` reports invalid definitions. `ResponseValidationError` identifies a semantic response failure and retains the question name and request ID. Single evaluations preserve original SDK transport, HTTP, and structural decoding errors; `evaluate_many()` retains them inside its exception group. Cancellation propagates through the SDK. Context exit closes an owned client and leaves a supplied client open.
 
-Results retain provider-reported usage, the model identifier actually sent and the model returned, request ID, and the raw HTTP response. Missing usage counts remain `None`. Access to raw responses is explicit; Jevantic adds no telemetry. SDK logging configuration still applies, including its option to log bodies at debug level.
+alba = Candidate('alba', 'Built the search service')
+bryn = Candidate('bryn', 'Led support engineering')
 
-Owned-client shutdown finishes before cancellation leaves `aclose()`. Cleanup uses AnyIO to support asyncio and Trio, including direct asyncio task cancellation. Close failures retain their original exception. The caller remains responsible for the lifecycle of an injected SDK client.
+question = Question.select(
+    [
+        Option(alba.identifier, alba, alba.summary),
+        Option(bryn.identifier, bryn, bryn.summary),
+    ],
+    instructions='Select the candidate whose experience best fits the role.',
+)
+candidate = (await evaluator.evaluate('Role: lead search engineering', question)).value.selected
+assert candidate is alba  # Candidate; illustrative selected identity
+```
 
-## Checks
+Object identity matters when the selected value carries application-only fields, connections, or relationships that must never be reconstructed from a model label.
 
-Run from this directory after `uv sync`:
+## Score against a rubric
 
-Local development is pinned to Python 3.13. The CI matrix covers Python 3.12, 3.13, and 3.14; additional interpreter runs belong in CI.
+`Question.score()` preserves a fractional `ScoreAnswer`, its probability distribution, rubric legend, and provider confidence.
+
+```python
+from jevantic import Question
+
+quality = await evaluator.evaluate(
+    'Draft: Jevantic asks structured decision questions.',
+    Question.score(['Does not explain the library', 'Explains part of the library', 'Clear explanation']),
+)
+quality.value.score
+# 1.6  # illustrative provider result; float on the 0–2 rubric
+quality.value.probabilities
+# {0: 0.1, 1: 0.2, 2: 0.7}  # illustrative provider result; Mapping[int, float]
+```
+
+## Evaluate several questions over shared state
+
+A `Batch` evaluates independent questions against one state in one provider request. `batch.add()` returns a typed `Handle`, so a mixed batch keeps every answer's precise type.
+
+```python
+from jevantic import Question
+
+batch = evaluator.batch('Draft: deploy production now')
+risk = batch.add('risk', Question.noul('Could the draft cause operational harm?'))
+route = batch.add('route', Question.choice(routes))
+quality = batch.add('quality', Question.score(['unclear', 'adequate', 'clear']))
+
+result = await batch.run()
+result.answer(risk).probability
+# 0.31  # illustrative provider result; float
+result.answer(route).selected
+# 'review'  # illustrative provider result; Route
+result.answer(quality).score
+# 1.8  # illustrative provider result; float
+```
+
+Questions are ordinary Python values, so functions can build reusable questions from application inputs:
+
+```python
+from jevantic import NoulAnswer, Question
+
+
+def relevance_question(query: str) -> Question[NoulAnswer]:
+    return Question.noul(f'Does this document answer {query!r}?')
+
+
+evaluation = await evaluator.evaluate('Document: …', relevance_question('How do I install Jevantic?'))
+```
+
+## Evaluate one question over independent inputs
+
+Use `evaluate_many()` when every input needs a separate evaluation. Set `concurrency` explicitly for your traffic and provider limits; results retain the input order.
+
+```python
+from jevantic import Question
+
+documents = ['First document', 'Second document', 'Third document']
+evaluations = await evaluator.evaluate_many(
+    documents,
+    Question.noul('Does this document answer the user question?'),
+    concurrency=4,
+)
+[evaluation.value.probability for evaluation in evaluations]
+# [0.91, 0.12, 0.73]  # illustrative provider results; list[float], input order
+```
+
+For a complete ranking function that keeps the original document objects and preserves tied order, see [the document-ranking example](https://github.com/dsfaccini/jevantic/blob/main/examples/ranking.py). For a complete assessment function with two `Score` questions, see [the assessment example](https://github.com/dsfaccini/jevantic/blob/main/examples/assessments.py).
+
+## Guard an agent's input
+
+`InputGuardrail` evaluates an original plain-text prompt with a `Noul` question before the first model request. Its `accept` policy receives the complete typed evaluation; returning `False` prevents the primary model from running.
+
+```python
+from pydantic_ai import Agent
+
+from jevantic import Jevaluator, Question
+from jevantic.pydantic_ai import InputGuardrail
+
+question = Question.noul('Does this prompt request disclosure of private data?')
+
+async with Jevaluator() as evaluator:
+    agent = Agent(
+        existing_model,
+        capabilities=[
+            InputGuardrail(
+                evaluator,
+                question,
+                accept=lambda _ctx, evaluation: evaluation.value.probability < 0.1,
+            )
+        ],
+    )
+    result = await agent.run('Summarize this meeting agenda.')
+```
+
+The guardrail borrows `evaluator`, so the application closes it. See [the complete input-guardrail example](https://github.com/dsfaccini/jevantic/blob/main/examples/input_guardrail.py) for an agent builder and an explicit policy function.
+
+## Guard an agent's output
+
+`OutputGuardrail` evaluates complete plain-text output before `Agent.run()` returns. Its `accept` policy receives the same typed evaluation shape as `InputGuardrail`.
+
+```python
+from pydantic_ai import Agent
+
+from jevantic import Jevaluator, Question
+from jevantic.pydantic_ai import OutputGuardrail
+
+question = Question.noul('Could this response disclose private data?')
+
+async with Jevaluator() as evaluator:
+    agent = Agent(
+        existing_model,
+        capabilities=[
+            OutputGuardrail(
+                evaluator,
+                question,
+                accept=lambda _ctx, evaluation: evaluation.value.probability < 0.1,
+            )
+        ],
+    )
+    result = await agent.run('Summarize this meeting agenda.')
+    # result.output: str  # available only when the output is accepted
+```
+
+Streaming can expose partial and final text before rejection; output functions can already have side effects. The check runs after ordinary result transformations. Place the guardrail before other outermost capabilities that change results. See [the complete example](https://github.com/dsfaccini/jevantic/blob/main/examples/output_guardrail.py) and [streaming contract](https://github.com/dsfaccini/jevantic/blob/main/docs/reference.md#pydantic-ai-output-guardrail).
+
+## Reference and further reading
+
+The [API reference](https://github.com/dsfaccini/jevantic/blob/main/docs/reference.md) covers input snapshots, response validation, errors, client ownership, request metadata, and fan-out failure behavior.
+
+- [Vocabulary](https://github.com/dsfaccini/jevantic/blob/main/CONTEXT.md) and [short illustrated lesson](https://github.com/dsfaccini/jevantic/blob/main/docs/learning/lessons/0001-primitive-convenience-workflow.html)
+- [Current requirements and decisions](https://github.com/dsfaccini/jevantic/blob/main/docs/design/discovery.md) and [core design](https://github.com/dsfaccini/jevantic/blob/main/docs/design/core-experiment.md)
+- [Pydantic AI capability design](https://github.com/dsfaccini/jevantic/blob/main/docs/design/pydantic-ai-capabilities.md)
+- [Four-second API comparisons](https://github.com/dsfaccini/jevantic/blob/main/assets/marketing/README.md)
+- [Verification evidence](https://github.com/dsfaccini/jevantic/blob/main/docs/verification.md) and [research index](https://github.com/dsfaccini/jevantic/blob/main/docs/research/index.md)
+
+## Develop
+
+Use Python 3.13 locally. Install the optional integration before running the complete test suite:
 
 ```sh
-uv run coverage run -m pytest tests/test_evaluation.py tests/test_questions.py tests/test_lifecycle.py tests/test_examples.py tests/test_fanout.py -q
-uv run coverage report --show-missing
-uv run pyright src/jevantic tests examples checks
+uv sync --extra pydantic-ai
+uv run pytest tests -q
+uv run pyright src tests examples checks
 uv run python checks/typecheck_negative.py
 uv run ruff check src tests examples checks typecheck
 uv run ruff format --check src tests examples checks typecheck
 uv build
 ```
 
-`typecheck/invalid.py` deliberately fails strict Pyright checking at its marked expressions. Its dedicated check requires those errors; the positive check excludes it.
-
-Tests use the real SDK with deterministic local HTTP transports, fake credentials, and a `.invalid` endpoint. Separate opt-in checks have exercised the live API and the documented workflows. See [verification evidence](docs/verification.md) for commands, versions, results, and limits.
-
-The observed API accepts a one-level Score and rejects more than ten levels. Jevantic follows those observed bounds, while provider guidance recommends at least two. Live examples have satisfied the numerical tolerances; a small set of responses cannot establish every future rounding behavior. Judgment quality, calibration, performance, and remote cancellation remain separate verification work.
-
-## Design and learning
-
-- [Vocabulary](CONTEXT.md) and [short illustrated lesson](docs/learning/lessons/0001-primitive-convenience-workflow.html)
-- [Requirements and current decisions](docs/design/discovery.md)
-- [Core design](docs/design/core-experiment.md) and [interface comparison](docs/design/interface-comparison.md)
-- [Requirements and verification](docs/design/verification-plan.md)
-- [Research index](docs/research/index.md), including cookbook patterns and harness interfaces
-- [First harness integration plan](docs/design/harness-integration.md)
-- [Initial design experiments](experiments/README.md)
+The [verification evidence](https://github.com/dsfaccini/jevantic/blob/main/docs/verification.md) records environments, results, and limits for checked revisions.

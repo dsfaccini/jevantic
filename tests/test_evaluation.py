@@ -12,8 +12,8 @@ from pydantic import BaseModel, JsonValue, ValidationError
 from jevantic import (
     ChoiceAnswer,
     ChoiceProbability,
-    Evaluator,
     Handle,
+    Jevaluator,
     JsonContent,
     NoulAnswer,
     Option,
@@ -63,7 +63,7 @@ async def test_mixed_batch_preserves_types_values_and_request_shape(backend: Bac
     )
     candidates: list[Candidate] = [Candidate('a', 'local-a'), Candidate('b', 'local-b')]
     teams: dict[Team, JsonContent | None] = {Team.SUPPORT: 'Customer help', Team.ENGINEERING: None}
-    evaluator = Evaluator(client=backend.client, model='jev-request-alias')
+    evaluator = Jevaluator(client=backend.client, model='jev-request-alias')
     batch = evaluator.batch({'document': 'example'})
     risk = batch.add('risk', Question.noul('Could this expose a secret?', true='Yes', false='No'))
     team = batch.add('team', Question.choice(teams, instructions='Which team should handle this?'))
@@ -125,7 +125,7 @@ async def test_mixed_batch_preserves_types_values_and_request_shape(backend: Bac
 
 async def test_single_question_and_unknown_usage(backend: Backend) -> None:
     backend.respond({'answer': {'type': 'noul', 'noul': 0.8}}, usage={})
-    evaluator = Evaluator(client=backend.client)
+    evaluator = Jevaluator(client=backend.client)
     result = await evaluator.evaluate('state', Question.noul())
     assert result.value == NoulAnswer(0.8)
     assert result.info.usage == Usage(None, None)
@@ -144,7 +144,7 @@ async def test_state_and_question_definitions_are_snapshotted(backend: Backend) 
     level: dict[str, JsonValue] = {'meaning': 'low'}
     criteria: list[JsonContent] = [level, 'high']
     question = Question.score(criteria, instructions=instructions)
-    evaluator = Evaluator(client=backend.client)
+    evaluator = Jevaluator(client=backend.client)
     batch = evaluator.batch(state)
     handle = batch.add('q', question)
     state.text = 'changed'
@@ -188,7 +188,7 @@ async def test_tuple_content_matches_its_json_array_legend(backend: Backend) -> 
         }
     )
     question = Question.score([('low', 'example'), 'high'])
-    result = await Evaluator(client=backend.client).evaluate(('array', 'state'), question)
+    result = await Jevaluator(client=backend.client).evaluate(('array', 'state'), question)
     assert result.value.legend == {0: ['low', 'example'], 1: 'high'}
     assert backend.transport.requests[0]['state'] == ['array', 'state']
     assert backend.transport.requests[0]['questions'] == {
@@ -197,7 +197,7 @@ async def test_tuple_content_matches_its_json_array_legend(backend: Backend) -> 
 
 
 async def test_batch_registration_and_foreign_handles(backend: Backend) -> None:
-    evaluator = Evaluator(client=backend.client)
+    evaluator = Jevaluator(client=backend.client)
     batch = evaluator.batch('state')
     with pytest.raises(QuestionError, match='at least one'):
         await batch.run()
@@ -218,7 +218,7 @@ async def test_batch_registration_and_foreign_handles(backend: Backend) -> None:
 
 
 async def test_repeated_concurrent_evaluations_have_separate_results(backend: Backend) -> None:
-    evaluator = Evaluator(client=backend.client)
+    evaluator = Jevaluator(client=backend.client)
     batch = evaluator.batch(['shared', 'state'])
     handle = batch.add('q', Question.noul('Ready?'))
     backend.respond({'q': {'type': 'noul', 'noul': 0.1}})
@@ -240,7 +240,7 @@ async def test_repeated_concurrent_evaluations_have_separate_results(backend: Ba
 )
 async def test_answer_names_are_exact(backend: Backend, answers: dict[str, JsonValue]) -> None:
     backend.respond(answers)
-    batch = Evaluator(client=backend.client).batch('state')
+    batch = Jevaluator(client=backend.client).batch('state')
     batch.add('q', Question.noul())
     with pytest.raises(ResponseValidationError, match='answer names') as caught:
         await batch.run()
@@ -249,7 +249,7 @@ async def test_answer_names_are_exact(backend: Backend, answers: dict[str, JsonV
 
 async def test_invalid_answer_is_rejected_before_result_is_returned(backend: Backend) -> None:
     backend.respond({'q': {'type': 'noul', 'noul': 1.5}})
-    batch = Evaluator(client=backend.client).batch('state')
+    batch = Jevaluator(client=backend.client).batch('state')
     batch.add('q', Question.noul())
     with pytest.raises(ResponseValidationError, match='between zero and one') as caught:
         await batch.run()
@@ -261,7 +261,7 @@ async def test_sdk_errors_keep_their_categories_and_metadata(backend: Backend) -
     backend.transport.responses.append(
         httpx2.Response(401, json={'detail': 'No access'}, headers={'x-typesafe-request-id': 'auth-failure'})
     )
-    evaluator = Evaluator(client=backend.client)
+    evaluator = Jevaluator(client=backend.client)
     with pytest.raises(typesafe_sdk.TypeSafeAuthenticationError) as caught:
         await evaluator.evaluate('state', Question.noul())
     assert (caught.value.status, caught.value.request_id) == (401, 'auth-failure')
@@ -271,7 +271,7 @@ async def test_sdk_errors_keep_their_categories_and_metadata(backend: Backend) -
 
 
 async def test_invalid_json_content_fails_before_io(backend: Backend) -> None:
-    evaluator = Evaluator(client=backend.client)
+    evaluator = Jevaluator(client=backend.client)
     with pytest.raises(ValidationError):
         await evaluator.evaluate({'number': float('nan')}, Question.noul())
     assert backend.transport.requests == []
@@ -292,5 +292,5 @@ async def test_literal_choice(backend: Backend) -> None:
             }
         }
     )
-    result = await Evaluator(client=backend.client).evaluate('state', Question.choice(routes))
+    result = await Jevaluator(client=backend.client).evaluate('state', Question.choice(routes))
     assert result.value.selected == 'allow'

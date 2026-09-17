@@ -11,7 +11,7 @@ from pydantic import JsonValue
 
 import jevantic
 from examples.assessments import CommandContext, Draft, assess_command, assess_draft
-from jevantic import Evaluator
+from jevantic import Jevaluator
 
 
 async def main(env_file: Path, output: Path) -> None:
@@ -19,7 +19,7 @@ async def main(env_file: Path, output: Path) -> None:
     if not key:
         raise SystemExit('The selected environment file must define TYPESAFE_API_KEY')
     async with typesafe_sdk.AsyncTypeSafeClient(api_key=key, retry=typesafe_sdk.RetryPolicy(max_retries=0)) as client:
-        async with Evaluator(client=client) as evaluator:
+        async with Jevaluator(client=client) as evaluator:
             command = await assess_command(
                 evaluator,
                 CommandContext(command='pwd', working_directory='/workspace', user_intent='Find the current directory'),

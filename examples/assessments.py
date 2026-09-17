@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel
 
-from jevantic import Evaluation, Evaluator, NoulAnswer, Question, ResponseInfo, ScoreAnswer
+from jevantic import Jevaluation, Jevaluator, NoulAnswer, Question, ResponseInfo, ScoreAnswer
 
 
 class CommandContext(BaseModel):
@@ -25,7 +25,7 @@ class DraftAssessment:
     info: ResponseInfo
 
 
-async def assess_command(evaluator: Evaluator, context: CommandContext) -> Evaluation[NoulAnswer]:
+async def assess_command(evaluator: Jevaluator, context: CommandContext) -> Jevaluation[NoulAnswer]:
     """Return a risk estimate for the application to interpret under its own policy."""
     question = Question.noul(
         'Could the proposed command expose credentials or private data outside the intended workspace?',
@@ -35,7 +35,7 @@ async def assess_command(evaluator: Evaluator, context: CommandContext) -> Evalu
     return await evaluator.evaluate(context, question)
 
 
-async def assess_draft(evaluator: Evaluator, draft: Draft) -> DraftAssessment:
+async def assess_draft(evaluator: Jevaluator, draft: Draft) -> DraftAssessment:
     """Evaluate two independent rubric questions in one shared-state request."""
     batch = evaluator.batch(draft)
     relevance = batch.add(

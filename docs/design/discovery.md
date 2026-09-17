@@ -9,8 +9,8 @@ Updated: 2026-09-17 UTC
 - Keep the fundamental layer composable and available to callers.
 - Add convenient interfaces for recurring uses where those interfaces earn their maintenance cost.
 - Aim for Pydantic AI's robustness and maintainability through explicit design and verification.
-- Establish Jevantic independently before integrating it into Pydantic AI Harness.
-- Explore harness capabilities that benefit from typed decisions and Jev's execution characteristics.
+- Keep Jevantic independently installable, with Pydantic AI capabilities in the optional `pydantic-ai` extra.
+- Use Harness capabilities as design precedent for Jevantic-owned integrations.
 - Maintain a curated, persistent knowledge base with dedicated research subagents.
 - Develop shared understanding incrementally.
 - Focus on Jev; add another backend when a concrete need establishes its value.
@@ -36,7 +36,7 @@ These requirements come from the project brief on 2026-09-16. They do not prescr
 | D2 | Representative user workflows for the first interfaces | Workload and harness research | Incremental priorities delegated; begin with small, high-impact uses |
 | D3 | What Jevantic owns beyond individual model requests | D1, D2, provider contract | Typed composition, input/answer validation, execution and metadata in the alpha; conveniences added from demonstrated uses |
 | D4 | Engineering guarantees for the first usable release | D2, D3, Pydantic AI research | Alpha guarantees and executed checks recorded; hosted Python 3.12/3.13/3.14 checks pass |
-| D5 | Integration with harness capabilities | Standalone interface validated against D2 | Concrete first guardrail plan recorded; implementation is a later integration task |
+| D5 | Pydantic AI capabilities | Standalone interface validated against D2 | Jevantic-owned optional integration; input and output guardrails verify the shared contract |
 
 The current backend and workflow priorities permit implementation to proceed. Consequential new abstractions remain subject to evidence from complete call sites.
 
@@ -58,7 +58,10 @@ The current backend and workflow priorities permit implementation to proceed. Co
 - Addressed a second independent review: cancellation during owned-client shutdown now waits for cleanup; metadata reads the actual requested model after SDK defaults are applied.
 - Curated the official cookbooks and added a short lesson and reference glossary for the API vocabulary.
 - Added bounded independent-input fan-out and a document-ranking example. Public transport checks verify lazy consumption, ordering, SDK retries, cancellation, and error correlation.
-- Recorded a concrete [harness integration plan](harness-integration.md) using an existing sequential input-guardrail callback, with explicit ownership, policy, accounting, durability, and verification boundaries.
+- Recorded the [Pydantic AI capability design](pydantic-ai-capabilities.md), with explicit ownership, policy, accounting, durability, and verification boundaries.
+- Implemented input and output guardrails using released Pydantic AI hooks. Public agent tests verify policy decisions, output transformations, streaming exposure, wrapped durability, eager activation, and separate accounting on the current dependency and version floor.
+- Renamed the execution types to `Jevaluator` and `Jevaluation`, with positive and negative typing checks. The installed wheel passes the complete suite and 100% branch-coverage check.
+- Created two four-second comparison clips from tested examples for local-object selection and bounded independent-input evaluation.
 - Compared the complete fixed assessment with a result-schema facade. The facade saves four helper statements and none at the existing callers, while adding declaration checking; the alpha deliberately keeps ordinary typed assessment functions.
 - Created the private GitHub repository and verified the first hosted matrix: Python 3.12, 3.13, and 3.14 tests and 100% branch-coverage gates pass; static checks and package builds pass on Python 3.13. [Recorded run](https://github.com/dsfaccini/jevantic/actions/runs/35218750382).
 
@@ -69,8 +72,8 @@ See [candidate interfaces](interface-comparison.md), [core design](core-experime
 - The standalone typed core supports command-risk assessment and multi-rubric scoring as executable examples.
 - Bounded fan-out now supports independent inputs, retaining typed results and caller control of concurrency.
 - The result-schema comparison supports keeping ordinary assessment functions in this alpha; a compiler is not an unimplemented alpha requirement.
-- The first harness integration is planned against existing guardrail callback seams.
-- The repository is private at [dsfaccini/jevantic](https://github.com/dsfaccini/jevantic). The [Checks workflow](https://github.com/dsfaccini/jevantic/actions/workflows/checks.yml) owns Python 3.12/3.14 execution; local Python 3.13 and installed-wheel checks pass.
+- The optional Pydantic AI integration provides `InputGuardrail` and `OutputGuardrail`. The [development guide](../development/capabilities.md) captures verified lessons for further capabilities.
+- The repository is at [dsfaccini/jevantic](https://github.com/dsfaccini/jevantic). The [Checks workflow](https://github.com/dsfaccini/jevantic/actions/workflows/checks.yml) owns Python 3.12/3.14 execution; local Python 3.13 and installed-wheel checks pass.
 
 These priorities follow the agreed incremental scope. A general workflow engine, universal guard thresholds, multi-provider framework, and arbitrary generative function calling have no current requirement.
 

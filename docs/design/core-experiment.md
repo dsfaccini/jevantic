@@ -16,9 +16,9 @@ risk_answer = result.answer(risk)        # NoulAnswer
 quality_answer = result.answer(quality)  # ScoreAnswer
 ```
 
-`Evaluator.evaluate(state, question)` handles one question. `Question.choice()` preserves typed string labels, and `Question.select()` recovers original local objects from returned labels. Their probabilities and confidence remain available. [Complete assessment functions](../../examples/assessments.py) demonstrate a command-risk question and two rubric scores in one request.
+`Jevaluator.evaluate(state, question)` handles one question. `Question.choice()` preserves typed string labels, and `Question.select()` recovers original local objects from returned labels. Their probabilities and confidence remain available. [Complete assessment functions](../../examples/assessments.py) demonstrate a command-risk question and two rubric scores in one request.
 
-`Evaluator.evaluate_many(states, question, concurrency=...)` repeats a question over independent inputs using bounded workers. It consumes input lazily and returns one typed evaluation per input in the original order. A failure cancels unfinished work and raises an exception group with the original errors; evaluation failures carry their input index. The [ranking example](../../examples/ranking.py) composes this with a stable sort and preserves each original document object.
+`Jevaluator.evaluate_many(states, question, concurrency=...)` repeats a question over independent inputs using bounded workers. It consumes input lazily and returns one typed evaluation per input in the original order. A failure cancels unfinished work and raises an exception group with the original errors; evaluation failures carry their input index. The [ranking example](../../examples/ranking.py) composes this with a stable sort and preserves each original document object.
 
 The scoring example returns an ordinary dataclass with named fields. The [complete-call-site comparison](interface-comparison.md#decision-for-this-alpha) found that a Pydantic schema compiler removes four helper statements and none at its callers while adding declaration checking. The alpha therefore retains the ordinary function and dataclass.
 
@@ -29,7 +29,7 @@ The scoring example returns an ordinary dataclass with named fields. The [comple
 | `Question[T]` | Capture a question definition and validate/decode an SDK answer into `T` |
 | `Handle[T]` | Correlate a registered question with its typed answer in the originating batch |
 | `Batch` | Snapshot shared state, freeze registration at execution, perform an explicit repeatable evaluation |
-| `Evaluator` | Execute through one configured SDK client, validate answers, retain metadata, and coordinate explicitly bounded independent evaluations |
+| `Jevaluator` | Execute through one configured SDK client, validate answers, retain metadata, and coordinate explicitly bounded independent evaluations |
 | TypeSafe SDK | HTTP, authentication, timeout configuration, transport injection, retries, structural response decoding |
 | Application | Build questions with ordinary functions and decide what action follows an answer |
 

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+<style>
+  .eyebrow { font: 500 25px Menlo, monospace; letter-spacing: 2px; fill: #5d5b61; }
+  .headline { font: 700 72px Menlo, monospace; letter-spacing: -2.7px; fill: #222226; }
+  .label { font: 700 23px Menlo, monospace; letter-spacing: .2px; }
+  .code { font: 500 30px Menlo, monospace; fill: #f4f0eb; }
+  .line-number { font: 500 22px Menlo, monospace; fill: #8f929e; }
+  .support { font: 700 30px Menlo, monospace; }
+  .footer { font: 500 22px Menlo, monospace; fill: #5d5b61; }
+  .brand { font: 700 26px Menlo, monospace; letter-spacing: 1px; fill: #222226; }
+</style>
+<rect width="1920" height="1080" fill="#f7f2ea"/>
+<rect x="0" y="0" width="1920" height="12" fill="#8e72d8"/>
+<text x="264" y="176" class="eyebrow">JEVANTIC · TYPED DECISIONS</text>
+<text x="264" y="284" class="headline">A choice returns your object.</text>
+<g opacity="1.00000">
+  <rect x="132" y="398" width="1656" height="510" rx="30" fill="#202127"/>
+  <rect x="132" y="398" width="14" height="510" rx="7" fill="#8e72d8"/>
+  <rect x="188" y="448" width="346" height="54" rx="27" fill="#8e72d8" opacity="0.18"/>
+  <text x="218" y="484" class="label" fill="#c9b5ff">Manual mapping</text>
+  <line x1="188" y1="526" x2="1728" y2="526" stroke="#42444d" stroke-width="2"/>
+  <text x="192" y="580" class="line-number">01</text><text x="260" y="580" class="code" xml:space="preserve">question = <tspan fill="#c9b5ff">Question</tspan>.choice(</text><text x="192" y="632" class="line-number">02</text><text x="260" y="632" class="code" xml:space="preserve">    {key: c.summary <tspan fill="#f1c982">for</tspan> key, c <tspan fill="#f1c982">in</tspan> candidates_by_id.items()},</text><text x="192" y="684" class="line-number">03</text><text x="260" y="684" class="code" xml:space="preserve">    instructions=CANDIDATE_INSTRUCTIONS,</text><text x="192" y="736" class="line-number">04</text><text x="260" y="736" class="code" xml:space="preserve">)</text><text x="192" y="788" class="line-number">05</text><text x="260" y="788" class="code" xml:space="preserve">evaluation = <tspan fill="#f1c982">await</tspan> evaluator.evaluate(state, question)</text><text x="192" y="840" class="line-number">06</text><text x="260" y="840" class="code" xml:space="preserve"><tspan fill="#f1c982">return</tspan> candidates_by_id[evaluation.value.selected]</text>
+  <text x="188" y="885" class="support" fill="#a8dba8" opacity="0"> </text>
+</g>
+<g opacity="0.00000">
+  <rect x="132" y="398" width="1656" height="510" rx="30" fill="#202127"/>
+  <rect x="132" y="398" width="14" height="510" rx="7" fill="#71b878"/>
+  <rect x="188" y="448" width="346" height="54" rx="27" fill="#71b878" opacity="0.18"/>
+  <text x="218" y="484" class="label" fill="#a8dba8">Question.select</text>
+  <line x1="188" y1="526" x2="1728" y2="526" stroke="#42444d" stroke-width="2"/>
+  <text x="192" y="580" class="line-number">01</text><text x="260" y="580" class="code" xml:space="preserve">question = <tspan fill="#c9b5ff">Question</tspan>.select(</text><text x="192" y="632" class="line-number">02</text><text x="260" y="632" class="code" xml:space="preserve">    (<tspan fill="#c9b5ff">Option</tspan>(c.identifier, c, c.summary) <tspan fill="#f1c982">for</tspan> c <tspan fill="#f1c982">in</tspan> candidates),</text><text x="192" y="684" class="line-number">03</text><text x="260" y="684" class="code" xml:space="preserve">    instructions=CANDIDATE_INSTRUCTIONS,</text><text x="192" y="736" class="line-number">04</text><text x="260" y="736" class="code" xml:space="preserve">)</text><text x="192" y="788" class="line-number">05</text><text x="260" y="788" class="code" xml:space="preserve">evaluation = <tspan fill="#f1c982">await</tspan> evaluator.evaluate(state, question)</text><text x="192" y="840" class="line-number">06</text><text x="260" y="840" class="code" xml:space="preserve"><tspan fill="#f1c982">return</tspan> evaluation.value.selected</text>
+  <text x="188" y="885" class="support" fill="#a8dba8" opacity="1">The original object, with its type.</text>
+</g>
+<text x="264" y="938" class="footer">Excerpt · full runnable example included</text>
+<text x="1487" y="938" class="brand">jevantic</text>
+</svg>

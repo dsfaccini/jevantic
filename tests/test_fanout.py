@@ -8,7 +8,7 @@ import pytest
 import typesafe_sdk
 from conftest import Backend, request_adapter
 
-from jevantic import Evaluation, Evaluator, NoulAnswer, Question
+from jevantic import Jevaluation, Jevaluator, NoulAnswer, Question
 
 exception_group_type: type[ExceptionGroup[Exception]] = ExceptionGroup
 
@@ -81,8 +81,8 @@ def test_evaluate_many_orders_results_bounds_work_and_pulls_lazily(async_backend
         async with typesafe_sdk.AsyncTypeSafeClient(
             api_key='offline-key', base_url='https://jevantic.invalid', transport=transport, retry=retry
         ) as client:
-            evaluator = Evaluator(client=client)
-            results: list[Evaluation[NoulAnswer]] = []
+            evaluator = Jevaluator(client=client)
+            results: list[Jevaluation[NoulAnswer]] = []
 
             async def evaluate() -> None:
                 results.extend(await evaluator.evaluate_many(states(), Question.noul(), concurrency=2))
@@ -129,7 +129,7 @@ async def test_evaluate_many_validates_concurrency_before_input_or_io(
     backend: Backend, concurrency: object, error_type: type[Exception]
 ) -> None:
     with pytest.raises(error_type):
-        await Evaluator(client=backend.client).evaluate_many(
+        await Jevaluator(client=backend.client).evaluate_many(
             ForbiddenInputs(),
             Question.noul(),
             concurrency=concurrency,  # pyright: ignore[reportArgumentType]
@@ -138,7 +138,7 @@ async def test_evaluate_many_validates_concurrency_before_input_or_io(
 
 
 async def test_evaluate_many_empty_input_makes_no_request(backend: Backend) -> None:
-    results = await Evaluator(client=backend.client).evaluate_many((), Question.noul(), concurrency=2)
+    results = await Jevaluator(client=backend.client).evaluate_many((), Question.noul(), concurrency=2)
     assert (results, backend.transport.requests) == ([], [])
 
 
@@ -160,7 +160,7 @@ class FailingInputs(Iterator[str]):
 async def test_evaluate_many_groups_input_iterator_failures(backend: Backend, at_creation: bool) -> None:
     error = RuntimeError('Source failed')
     with pytest.raises(exception_group_type) as caught:
-        await Evaluator(client=backend.client).evaluate_many(
+        await Jevaluator(client=backend.client).evaluate_many(
             FailingInputs(error, at_creation=at_creation), Question.noul(), concurrency=1
         )
     assert caught.value.exceptions == (error,)
@@ -182,7 +182,7 @@ async def test_evaluate_many_cancels_workers_and_annotates_original_error() -> N
         retry=typesafe_sdk.RetryPolicy(max_retries=0),
     ) as client:
         task = asyncio.create_task(
-            Evaluator(client=client).evaluate_many([private_state, 'blocked'], Question.noul(), concurrency=2)
+            Jevaluator(client=client).evaluate_many([private_state, 'blocked'], Question.noul(), concurrency=2)
         )
         await asyncio.wait_for(transport.started[private_state].wait(), timeout=2)
         await asyncio.wait_for(transport.started['blocked'].wait(), timeout=2)
@@ -217,7 +217,7 @@ async def test_evaluate_many_cancellation_cleans_workers_and_preserves_ownership
             return client
 
         monkeypatch.setattr(typesafe_sdk, 'AsyncTypeSafeClient', create_client)
-        evaluator = Evaluator() if owned else Evaluator(client=client)
+        evaluator = Jevaluator() if owned else Jevaluator(client=client)
 
         async def evaluate() -> None:
             async with evaluator:

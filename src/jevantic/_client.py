@@ -38,7 +38,7 @@ class ResponseInfo:
 
 
 @dataclass(frozen=True)
-class Evaluation[AnswerT_co]:
+class Jevaluation[AnswerT_co]:
     """A typed answer and the metadata of its evaluation."""
 
     value: AnswerT_co
@@ -80,7 +80,7 @@ class RequestModel(BaseModel):
     model: str
 
 
-class Evaluator:
+class Jevaluator:
     """Evaluate questions through TypeSafe's asynchronous SDK.
 
     Without ``client``, a client is created from ``api_key`` or the SDK's
@@ -107,12 +107,12 @@ class Evaluator:
         """Prepare a shared-state batch without making a provider request."""
         return Batch(content_snapshot(state), self._request)
 
-    async def evaluate(self, state: JsonContent | BaseModel, question: Question[AnswerT]) -> Evaluation[AnswerT]:
+    async def evaluate(self, state: JsonContent | BaseModel, question: Question[AnswerT]) -> Jevaluation[AnswerT]:
         """Evaluate one question, preserving its exact answer type and request metadata."""
         batch = self.batch(state)
         handle = batch.add('answer', question)
         result = await batch.run()
-        return Evaluation(result.answer(handle), result.info)
+        return Jevaluation(result.answer(handle), result.info)
 
     async def evaluate_many(
         self,
@@ -120,7 +120,7 @@ class Evaluator:
         question: Question[AnswerT],
         *,
         concurrency: int,
-    ) -> list[Evaluation[AnswerT]]:
+    ) -> list[Jevaluation[AnswerT]]:
         """Evaluate independent inputs with bounded concurrency and ordered results.
 
         Inputs are consumed lazily. Each has a separate request and result metadata.
@@ -131,7 +131,7 @@ class Evaluator:
         worker_slots = range(concurrency)
         if isinstance(concurrency, bool) or concurrency < 1:
             raise ValueError('Concurrency must be a positive integer')
-        results: dict[int, Evaluation[AnswerT]] = {}
+        results: dict[int, Jevaluation[AnswerT]] = {}
 
         async def worker() -> None:
             for index, state in inputs:

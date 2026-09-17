@@ -3,7 +3,7 @@
 The interface is experimental while the first complete workflows are evaluated.
 """
 
-from ._client import Batch, BatchResult, Evaluation, Evaluator, Handle, ResponseInfo, Usage
+from ._client import Batch, BatchResult, Handle, Jevaluation, Jevaluator, ResponseInfo, Usage
 from ._errors import QuestionError, ResponseValidationError
 from ._json import JsonContent
 from ._questions import ChoiceAnswer, ChoiceProbability, NoulAnswer, Option, Question, ScoreAnswer
@@ -13,8 +13,8 @@ __all__ = [
     'BatchResult',
     'ChoiceAnswer',
     'ChoiceProbability',
-    'Evaluation',
-    'Evaluator',
+    'Jevaluation',
+    'Jevaluator',
     'Handle',
     'JsonContent',
     'NoulAnswer',

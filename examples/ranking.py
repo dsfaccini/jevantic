@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel
 
-from jevantic import Evaluation, Evaluator, NoulAnswer, Question
+from jevantic import Jevaluation, Jevaluator, NoulAnswer, Question
 
 
 class Document(BaseModel):
@@ -16,11 +16,11 @@ class Document(BaseModel):
 @dataclass(frozen=True)
 class RankedDocument:
     document: Document
-    relevance: Evaluation[NoulAnswer]
+    relevance: Jevaluation[NoulAnswer]
 
 
 async def rank_documents(
-    evaluator: Evaluator, query: str, documents: Sequence[Document], *, concurrency: int
+    evaluator: Jevaluator, query: str, documents: Sequence[Document], *, concurrency: int
 ) -> list[RankedDocument]:
     """Return original documents ordered by estimated relevance; preserve order in ties."""
     candidates = tuple(documents)

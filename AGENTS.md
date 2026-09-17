@@ -3,6 +3,7 @@
 Read README.md, CONTEXT.md, and docs/design/discovery.md before choosing implementation work.
 Use docs/research/index.md to find relevant evidence.
 Read only the research pages needed for the current task.
+For Pydantic AI capabilities, read docs/development/capabilities.md before implementation.
 
 ## Knowledge maintenance
 

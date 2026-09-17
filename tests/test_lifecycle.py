@@ -6,11 +6,11 @@ import pytest
 import typesafe_sdk
 from conftest import Backend
 
-from jevantic import Evaluator, Question
+from jevantic import Jevaluator, Question
 
 
 async def test_borrowed_client_remains_usable_after_evaluator_closes(backend: Backend) -> None:
-    async with Evaluator(client=backend.client) as evaluator:
+    async with Jevaluator(client=backend.client) as evaluator:
         backend.respond({'answer': {'type': 'noul', 'noul': 0.5}})
         await evaluator.evaluate('state', Question.noul())
         with pytest.raises(RuntimeError, match='cannot be nested'):
@@ -36,7 +36,7 @@ async def test_created_client_is_closed(backend: Backend, monkeypatch: pytest.Mo
         return backend.client
 
     monkeypatch.setattr(typesafe_sdk, 'AsyncTypeSafeClient', create_client)
-    async with Evaluator(api_key='offline-key') as evaluator:
+    async with Jevaluator(api_key='offline-key') as evaluator:
         backend.respond({'answer': {'type': 'noul', 'noul': 0.5}})
         await evaluator.evaluate('state', Question.noul())
     assert api_keys == ['offline-key']
@@ -45,7 +45,7 @@ async def test_created_client_is_closed(backend: Backend, monkeypatch: pytest.Mo
 
 def test_borrowed_client_credentials_are_not_overridden(backend: Backend) -> None:
     with pytest.raises(ValueError, match='supplied SDK client'):
-        Evaluator(client=backend.client, api_key='different-key')
+        Jevaluator(client=backend.client, api_key='different-key')
 
 
 class BlockingTransport(httpx2.AsyncBaseTransport):
@@ -79,7 +79,7 @@ async def test_cancellation_and_ownership(owned: bool, monkeypatch: pytest.Monke
             return client
 
         monkeypatch.setattr(typesafe_sdk, 'AsyncTypeSafeClient', create_client)
-        evaluator = Evaluator() if owned else Evaluator(client=client)
+        evaluator = Jevaluator() if owned else Jevaluator(client=client)
 
         async def evaluate() -> None:
             async with evaluator:
@@ -131,7 +131,7 @@ def closing_transport(monkeypatch: pytest.MonkeyPatch) -> DelayedCloseTransport:
 
 
 async def test_direct_cancellation_waits_for_owned_client_to_close(closing_transport: DelayedCloseTransport) -> None:
-    evaluator = Evaluator()
+    evaluator = Jevaluator()
     task = asyncio.create_task(evaluator.aclose())
     await asyncio.wait_for(closing_transport.started.wait(), timeout=1.0)
     task.cancel()
@@ -151,7 +151,7 @@ def test_cancel_scope_waits_for_owned_client_to_close(
     backend_name: str, closing_transport: DelayedCloseTransport
 ) -> None:
     async def scenario() -> None:
-        evaluator = Evaluator()
+        evaluator = Jevaluator()
         with anyio.CancelScope() as scope:
 
             async def cancel_close() -> None:
@@ -173,5 +173,5 @@ async def test_close_failure_keeps_original_exception(closing_transport: Delayed
     closing_transport.error = RuntimeError('Transport close failed')
     closing_transport.release.set()
     with pytest.raises(RuntimeError) as caught:
-        await Evaluator().aclose()
+        await Jevaluator().aclose()
     assert caught.value is closing_transport.error

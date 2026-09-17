@@ -16,11 +16,11 @@ Vocabulary for structured probabilistic judgments and their use in software.
 
 **Probability**: A model's estimated likelihood of an allowed outcome.
 
-**Confidence**: TypeSafe's summary statistic of an answer's probability distribution. Choice and Score expose it; Noul does not.
+**Confidence**: TypeSafe's summary statistic of an answer's probability distribution. `Choice` and `Score` expose it; `Noul` does not.
 
-**Primitive**: A basic model operation that other behavior composes. Jev's primitives are Choice, Score, and Noul.
+**Primitive**: A basic model operation that other behavior composes. Jev's primitives are `Choice`, `Score`, and `Noul`.
 
-**Rubric**: Ordered level descriptions that define what a Score measures.
+**Rubric**: Ordered level descriptions that define what a `Score` measures.
 
 **Ergonomics**: How clear, convenient, and hard to misuse an interface is.
 

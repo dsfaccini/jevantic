@@ -6,15 +6,15 @@ Updated: 2026-09-17 UTC. This record separates the full requested outcome from t
 
 | Requested outcome | Evidence that would establish it | Current evidence |
 | --- | --- | --- |
-| Standalone Python library named Jevantic | Installable package, documented public interface, successful use outside the repository | Alpha wheel and source distribution build; installed wheel passes the behavioral suite and coverage; no publication |
+| Standalone Python library named Jevantic | Installable package, documented public interface, successful use outside the repository | Alpha wheel and source distribution build; installed wheel passes the complete behavioral suite and 100% branch coverage |
 | Elegant, powerful typed interfaces | Representative complete call sites; strict static fixtures; validated results retaining question and option types | Core preserves literal, enum, and local object types; positive and negative static fixtures pass; conveniences remain incremental |
 | Flexible fundamental layer | Direct composition of supported Jev questions and state, including mixed and runtime-built requests | Three primitives, runtime options, mixed batches, and direct SDK encode/decode exercised |
 | Convenient recurring uses | Recurring workflows implemented and documented through the public interface | Command-risk and multi-rubric examples work offline and against Jev; bounded fan-out and document ranking pass offline; result-schema compiler deliberately omitted after a complete-call-site comparison |
-| Robustness comparable to the relevant Pydantic AI mechanisms | Public behavior, failure-path, lifecycle, typing, and documentation checks with an explicit coverage bar | Core failure paths and ownership pass with 100% branch coverage locally; [hosted Python 3.12/3.13/3.14 checks](https://github.com/dsfaccini/jevantic/actions/runs/35218750382) pass with the same coverage gate |
-| Maintainable classes and architecture | A small coherent interface, justified ownership and seams, independent review of implementation against requirements | Two independent review passes reproduced six defects, addressed with regressions; SDK owns transport/retries, core owns typed composition and semantic validation |
+| Robustness comparable to the relevant Pydantic AI mechanisms | Public behavior, failure-path, lifecycle, typing, and documentation checks with an explicit coverage bar | Core and capability tests pass with 100% branch coverage locally and from an installed wheel; the [verification record](../verification.md) distinguishes current evidence from historical hosted checks |
+| Maintainable classes and architecture | A small coherent interface, justified ownership and seams, independent review of implementation against requirements | Independent review findings in core validation, ownership, and capability boundaries were addressed with public regression tests; SDK owns transport/retries, core owns typed composition and semantic validation |
 | Persistent curated knowledge with dedicated subagents | Source-linked records that distinguish facts, claims, proposals, and executed results | Initial research, interface findings, and executed probe evidence recorded |
 | Incremental shared understanding | Consequential choices recorded with their accepted rationale | Jev-first and incremental high-impact priorities agreed; Python scope recorded; vocabulary lesson and cookbook patterns curated |
-| Plan downstream harness capabilities after standalone validation | Capability mapping grounded in verified standalone behavior, with lifecycle and policy responsibilities specified | [Concrete guardrail integration plan](harness-integration.md) recorded, with subsequent capability candidates and explicit unexecuted integration tests |
+| Add optional Pydantic AI capabilities after standalone validation | Public-hook behavior, evaluator lifetime, explicit policy, and separate Jev accounting | Input and output guardrails pass public agent, streaming, durability, and configuration checks on Pydantic AI 2.38.0 and 2.44.0; [capability design](pydantic-ai-capabilities.md) records their boundaries |
 
 ## Proposed engineering checks
 
@@ -34,11 +34,11 @@ These checks translate the [Pydantic AI reference](../research/pydantic-ai-patte
 | Observability | Clear request/error events and an explicit content-capture policy; secrets and application state do not enter logs accidentally |
 | Packaging and docs | Typed installed package, supported-version checks, executable examples, and documentation of semantic and lifecycle limits |
 
-The current package reuses SDK transport and retries, provides explicit shared-state batches, and adds no telemetry. Python compatibility is configured in CI. Further execution conveniences and integration behavior must define their own guarantees rather than inherit them from this list.
+The core reuses SDK transport and retries and provides explicit shared-state batches. Optional capabilities emit typed decision events without request content; the package configures no telemetry exporter. Python compatibility is configured in CI. Further execution conveniences and integration behavior must define their own guarantees rather than inherit them from this list.
 
 ## Unresolved provider evidence
 
-- Live checks resolved the observed acceptance of omitted instructions and one-level Scores, plus the ten-level maximum. They describe the tested endpoint/model, not an immutable future guarantee.
+- Live checks resolved the observed acceptance of omitted instructions and one-level `Score` questions, plus the ten-level maximum. They describe the tested endpoint/model, not an immutable future guarantee.
 - Live responses satisfy the current numeric checks; tolerance remains an explicit experimental policy, with no normalization. Broader numerical edge cases still need release-level evidence.
 - Offline probes verify SDK response handling, cancellation propagation, injected-client closure, and configured retries. Successful real requests are recorded; provider-side cancellation and adverse network cleanup remain unverified.
 - Distinguish schema conformance from judgment accuracy and calibration. Library tests cannot establish model quality in every application domain.
