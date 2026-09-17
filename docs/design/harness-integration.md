@@ -25,7 +25,7 @@ Source: harness [guardrails capability](https://github.com/pydantic/pydantic-ai-
 | Configuration | Caller-configured SDK timeouts and retries remain effective. Any shared monetary or cross-provider request budget needs an explicit subsequent design. |
 | Serialization | A callback-bearing guardrail is not spec-serializable. Do not advertise persisted capability specifications for this bridge. |
 
-Jevantic evidence: local commit `b8ab4479c31f6f6c02a2af6d85e36f77e0082077`, [evaluator implementation](../../src/jevantic/_client.py), [lifecycle tests](../../tests/test_lifecycle.py), and [verification record](../verification.md). Jevantic has no hosted source URL at the time of this proposal.
+Jevantic evidence: [initial alpha commit](https://github.com/dsfaccini/jevantic/commit/b8ab4479c31f6f6c02a2af6d85e36f77e0082077), [evaluator implementation](../../src/jevantic/_client.py), [lifecycle tests](../../tests/test_lifecycle.py), and [verification record](../verification.md).
 
 ## Invocation and durable execution
 

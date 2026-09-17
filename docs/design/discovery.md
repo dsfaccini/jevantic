@@ -69,7 +69,7 @@ See [candidate interfaces](interface-comparison.md), [core design](core-experime
 - Bounded fan-out now supports independent inputs, retaining typed results and caller control of concurrency.
 - The result-schema comparison supports keeping ordinary assessment functions in this alpha; a compiler is not an unimplemented alpha requirement.
 - The first harness integration is planned against existing guardrail callback seams.
-- The GitHub destination and visibility are not yet selected. Python 3.12/3.14 CI remains unrun; local Python 3.13 and installed-wheel checks pass.
+- The repository is private at [dsfaccini/jevantic](https://github.com/dsfaccini/jevantic). The [Checks workflow](https://github.com/dsfaccini/jevantic/actions/workflows/checks.yml) owns Python 3.12/3.14 execution; local Python 3.13 and installed-wheel checks pass.
 
 These priorities follow the agreed incremental scope. A general workflow engine, universal guard thresholds, multi-provider framework, and arbitrary generative function calling have no current requirement.
 
