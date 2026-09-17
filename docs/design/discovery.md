@@ -35,8 +35,8 @@ These requirements come from the project brief on 2026-09-16. They do not prescr
 | D1 | Jev-specific interface or support for other backends | None | Jev first; other backends when needed |
 | D2 | Representative user workflows for the first interfaces | Workload and harness research | Incremental priorities delegated; begin with small, high-impact uses |
 | D3 | What Jevantic owns beyond individual model requests | D1, D2, provider contract | Typed composition, input/answer validation, execution and metadata in the alpha; conveniences added from demonstrated uses |
-| D4 | Engineering guarantees for the first usable release | D2, D3, Pydantic AI research | Python scope agreed; other guarantees open |
-| D5 | Integration with harness capabilities | Standalone interface validated against D2 | Later |
+| D4 | Engineering guarantees for the first usable release | D2, D3, Pydantic AI research | Alpha guarantees and executed checks recorded; hosted compatibility checks pending |
+| D5 | Integration with harness capabilities | Standalone interface validated against D2 | Concrete first guardrail plan recorded; implementation is a later integration task |
 
 The current backend and workflow priorities permit implementation to proceed. Consequential new abstractions remain subject to evidence from complete call sites.
 
@@ -59,17 +59,19 @@ The current backend and workflow priorities permit implementation to proceed. Co
 - Curated the official cookbooks and added a short lesson and reference glossary for the API vocabulary.
 - Added bounded independent-input fan-out and a document-ranking example. Public transport checks verify lazy consumption, ordering, SDK retries, cancellation, and error correlation.
 - Recorded a concrete [harness integration plan](harness-integration.md) using an existing sequential input-guardrail callback, with explicit ownership, policy, accounting, durability, and verification boundaries.
+- Compared the complete fixed assessment with a result-schema facade. The facade saves four helper statements and none at the existing callers, while adding declaration checking; the alpha deliberately keeps ordinary typed assessment functions.
 
 See [candidate interfaces](interface-comparison.md), [core design](core-experiment.md), [verification plan](verification-plan.md), and [executed evidence](../verification.md). The first alpha uses typed questions; its public names and conveniences can evolve with further workflows.
 
-## Current implementation sequence
+## Current milestone and remaining verification
 
-- Establish the standalone typed core using command-risk assessment and multi-rubric scoring as executable examples.
+- The standalone typed core supports command-risk assessment and multi-rubric scoring as executable examples.
 - Bounded fan-out now supports independent inputs, retaining typed results and caller control of concurrency.
-- Compare a small result-schema facade with the ordinary assessment functions before adding a schema compiler.
-- Plan harness integration against the resulting standalone interface, beginning with existing guardrail callback seams.
+- The result-schema comparison supports keeping ordinary assessment functions in this alpha; a compiler is not an unimplemented alpha requirement.
+- The first harness integration is planned against existing guardrail callback seams.
+- The GitHub destination and visibility are not yet selected. Python 3.12/3.14 CI remains unrun; local Python 3.13 and installed-wheel checks pass.
 
-The first two priorities follow the agreed incremental scope. A general workflow engine, universal guard thresholds, multi-provider framework, and arbitrary generative function calling have no current requirement.
+These priorities follow the agreed incremental scope. A general workflow engine, universal guard thresholds, multi-provider framework, and arbitrary generative function calling have no current requirement.
 
 ## Process references
 

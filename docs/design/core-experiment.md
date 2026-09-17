@@ -20,7 +20,7 @@ quality_answer = result.answer(quality)  # ScoreAnswer
 
 `Evaluator.evaluate_many(states, question, concurrency=...)` repeats a question over independent inputs using bounded workers. It consumes input lazily and returns one typed evaluation per input in the original order. A failure cancels unfinished work and raises an exception group with the original errors; evaluation failures carry their input index. The [ranking example](../../examples/ranking.py) composes this with a stable sort and preserves each original document object.
 
-The scoring example returns an ordinary dataclass with named fields. This is a concrete baseline for deciding whether a Pydantic schema declaration saves enough caller code to justify a compiler and its preflight checks.
+The scoring example returns an ordinary dataclass with named fields. The [complete-call-site comparison](interface-comparison.md#decision-for-this-alpha) found that a Pydantic schema compiler removes four helper statements and none at its callers while adding declaration checking. The alpha therefore retains the ordinary function and dataclass.
 
 ## Responsibilities
 

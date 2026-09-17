@@ -69,8 +69,10 @@ and the response to low confidence. A type annotation alone cannot supply those
 product choices.
 
 **Current core.** It has the question kinds needed for a manual dispatcher. A
-schema/signature compiler is the conspicuous missing ergonomic layer; it should
-remain a proposal until its interface and scope are settled.
+signature compiler could package this particular workflow once a caller needs
+it. That is distinct from a result-schema compiler, which the alpha
+[deliberately omits](../design/interface-comparison.md#decision-for-this-alpha)
+after comparing complete assessment call sites.
 
 Source: [function calling](https://docs.typesafe.ai/cookbooks/function_calling.md).
 

@@ -21,6 +21,8 @@ The standalone `jevantic` package builds as a source distribution and wheel, ver
 
 The installed-package check imported Jevantic from the isolated environment's `site-packages`, without a source-path override. Local development and checks now use Python 3.13 only. Earlier exploratory runs on other interpreters are not evidence for the current package's compatibility; the configured CI matrix owns that check.
 
+The final source archive and wheel were rebuilt from the committed repository. Every packaged source file and `py.typed` matched the tested installation byte-for-byte. The source archive excluded the local `.env` and virtual environment.
+
 ## Reproduce offline
 
 From the repository root:

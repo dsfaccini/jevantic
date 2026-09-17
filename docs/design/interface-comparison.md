@@ -1,6 +1,6 @@
 # Candidate interfaces
 
-Initial comparison: 2026-09-16. Updated 2026-09-17: typed questions and ordinary functions form the first alpha; the schema facade remains a proposal.
+Initial comparison: 2026-09-16. Updated 2026-09-17: typed questions and ordinary functions form the first alpha. The complete assessment comparison below establishes why a schema compiler is not included.
 
 Three independent design investigations considered reusable typed questions, caller-owned result schemas, and callable evaluations. The callable design converged on ordinary functions that build typed questions; it does not require a third execution framework.
 
@@ -16,7 +16,7 @@ Sources: [Jev semantics](../research/jev-semantics.md), [HTTP and SDK contract](
 
 Each question carries its answer type. Adding a question to a batch returns a typed handle; retrieving the answer with that handle preserves its type.
 
-Illustrative interface, not executable package syntax:
+The public batch interface:
 
 ```python
 batch = evaluator.batch(state=command_context)
@@ -63,7 +63,7 @@ Ordinary functions can use application dependencies and runtime data to return t
 
 ```python
 def choose_candidate(candidates: Sequence[Candidate]) -> Question[ChoiceAnswer[Candidate]]:
-    return choice([Option(candidate.identifier, candidate) for candidate in candidates])
+    return Question.select(Option(candidate.identifier, candidate) for candidate in candidates)
 ```
 
 The [question probe](../../experiments/typed_questions.py) exercises this composition with local application objects. The function builds a question; the explicit evaluator or batch performs I/O. Python controls branching and subsequent stages.
@@ -85,26 +85,26 @@ All three have leverage when removing repeated validation and type recovery from
 
 The [executed SDK probe](../research/jev-api-contract.md#executed-sdk-behavior) confirms that several semantic constraints are not enforced by SDK decoding: probability bounds, configured Choice labels, and correspondence to requested answer names. Validation against question definitions therefore has concrete work to own in either interface.
 
-## Recommendation for the next experiment
+## Decision for this alpha
 
-Use typed questions as the fundamental composition mechanism. Permit ordinary functions to construct them. Then build one small schema facade over that same mechanism and compare the complete call sites on the selected workloads. This retains the flexible layer while giving fixed assessments a route to familiar Pydantic ergonomics.
+Use typed questions as the fundamental composition mechanism and ordinary functions for reusable assessments. **Net-negative → skip a result-schema compiler for this alpha:** the existing complete workflow already provides named, typed results through one caller expression; a compiler saves internal assembly statements while adding another public declaration and validation contract.
 
-Do not treat the two interfaces as independent runtimes. Validation, metadata, and transport behavior should have one owner. Reuse the SDK's injected transport for deterministic HTTP responses unless concrete evidence shows that a new seam is needed.
+The comparison uses [`assess_draft`](../../examples/assessments.py), its [behavioral test](../../tests/test_examples.py), and its [live-check caller](../../checks/live_examples.py). Its two Score questions share one request and return a five-line dataclass with `relevance`, `clarity`, and `info`. Both callers already use one `await assess_draft(...)` expression.
 
-The first alpha now follows the typed-question foundation. Backend scope is Jev-first; local development uses Python 3.13 with other supported-version checks in CI. Workflow priorities are incremental rather than a fixed feature menu. Public names can evolve during the alpha, and a schema compiler still needs a complete comparison with ordinary assessment functions.
+A schema facade would replace five orchestration statements inside that function—create a batch, add two questions, run it, and assemble the result—with one evaluation call. Both rubric definitions and both named result fields still need declarations. It removes four helper statements and no statements from the callers. Returning `Evaluation[DraftScores]` would also add `.value` to their field access.
 
-## Questions opened by the experiments
+The current core already validates answer names, kinds, numeric values, distributions, and rubric correspondence before returning the assessment. A schema compiler could reuse that runtime, but must additionally reconcile each field's annotation with its question metadata before I/O. Literal-option consistency and generic selected objects require explicit handling; current questions carry a wire definition and decoder, not a runtime descriptor of their Python answer type.
 
-- Which calling style should the introductory example use?
-- Is declaring a result class worthwhile for the selected recurring assessments?
-- How should per-call dynamic options bind to reusable question definitions?
-- What is the simplest explicit interface for one shared-state request versus several independent-state requests?
-- Can schema preflight checks remain small, understandable, and consistent with the fundamental layer?
+On Python 3.13.3, the schema probe and the actual shared-request assessment test pass; strict Pyright reports no errors for the probe and assessment example. The unimplemented work is complete declaration checking, especially contradictory metadata, which the schema probe shows static typing does not reject.
+
+Reconsider this decision when recurring fixed assessments duplicate batch/result assembly across call sites, or when a stored Pydantic result replaces actual conversion and validation code. Compare that observable workload with this baseline. A future facade should share question validation, metadata, and transport with the core.
+
+The cookbook's closed-world function dispatcher is a different convenience: it interprets signatures, defaults, eligibility, and argument-selection policy. Omitting a result schema does not rule out evaluating that separate use when it becomes a concrete application requirement.
 
 ## Verification
 
 Strict Pyright and both offline scripts pass in the recorded environment. See the [experiment record](../../experiments/README.md) for exact scope, commands, versions, and limitations. No provider calls were made.
 
-The subsequent [typed core](core-experiment.md) adds executable SDK-backed assessments, failure-path tests, and live evidence. It is the initial alpha interface; the schema facade is not implemented.
+The subsequent [typed core](core-experiment.md) adds executable SDK-backed assessments, failure-path tests, and live evidence. It is the initial alpha interface; the result-schema compiler is deliberately omitted based on the complete-call-site comparison above.
 
 Process reference: [Design It Twice](https://github.com/mattpocock/skills/blob/959a8e9f1edc3adbe2f7e3054bb6fbefa6696260/skills/engineering/codebase-design/DESIGN-IT-TWICE.md).
