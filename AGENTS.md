@@ -5,6 +5,12 @@ Use docs/research/index.md to find relevant evidence.
 Read only the research pages needed for the current task.
 For Pydantic AI capabilities, read docs/development/capabilities.md before implementation.
 
+## Development workflow
+
+Push reviewed changes directly to `main`.
+Do not open pull requests.
+Verify CI on the pushed commit before reporting completion.
+
 ## Knowledge maintenance
 
 Keep requirements, verified facts, published claims, and proposals distinct.
